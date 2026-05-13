@@ -1,0 +1,151 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+enum ACStatus {
+  ON
+  OFF
+}
+
+enum ACMode {
+  COOL
+  DRY
+  FAN
+  AUTO
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model User {
+  id          String        @id @default(uuid())
+  email       String        @unique
+  password    String
+  fullName    String
+  role        Role          @default(USER)
+  rooms       Room[]
+  activityLog ActivityLog[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Room {
+  id                 String           @id @default(uuid())
+  name               String
+  location           String
+  currentPeople      Int              @default(0)
+  currentTemperature Float            @default(26)
+  peoplePerAC        Int              @default(10)
+  minTemp            Float            @default(22)
+  maxTemp            Float            @default(28)
+  defaultTemp        Float            @default(25)
+  autoMode           Boolean          @default(true)
+  startTime          String           @default("08:00")
+  endTime            String           @default("18:00")
+
+  userId             String
+  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  airConditioners    AirConditioner[]
+  sensorLogs         SensorLog[]
+  activityLogs       ActivityLog[]
+  schedules          Schedule[]
+  attendanceLogs     AttendanceLog[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([userId])
+}
+
+model Brand {
+  id              String           @id @default(uuid())
+  name            String           @unique
+  irProtocol      String
+  irConfig        Json
+  createdAt       DateTime         @default(now())
+  airConditioners AirConditioner[]
+}
+
+model AirConditioner {
+  id          String   @id @default(uuid())
+  brandId     String
+  roomId      String
+  status      ACStatus @default(OFF)
+  currentTemp Float    @default(26)
+  mode        ACMode   @default(COOL)
+  name        String
+  brand       Brand    @relation(fields: [brandId], references: [id], onDelete: Restrict)
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([brandId])
+  @@index([roomId])
+}
+
+model SensorLog {
+  id          String   @id @default(uuid())
+  roomId      String
+  peopleCount Int
+  temperature Float
+  timestamp   DateTime @default(now())
+  room        Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+
+  @@index([roomId, timestamp])
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  roomId    String
+  userId    String?
+  action    String
+  details   Json?
+  timestamp DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([roomId, timestamp])
+  @@index([userId])
+}
+
+model Schedule {
+  id        String    @id @default(uuid())
+  roomId    String
+  dayOfWeek DayOfWeek
+  startTime String
+  endTime   String
+  isActive  Boolean   @default(true)
+  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([roomId, dayOfWeek])
+}
+
+model AttendanceLog {
+  id        String   @id @default(uuid())
+  roomId    String
+  className String
+  period    Int
+  count     Int
+  imageUrl  String?
+  createdAt DateTime @default(now())
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
