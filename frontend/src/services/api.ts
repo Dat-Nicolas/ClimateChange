@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://localhost:3000'; // Update to your backend URL
+const BASE_URL = process.env.EXPO_PUBLIC_BASE_URL || 'http://localhost:3000';
 
 const api = {
   async get(endpoint: string) {

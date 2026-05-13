@@ -1,26 +1,6 @@
-# ClimateChange - Smart AC Mobile Reference
+# Smart AC IoT - Frontend (React Native/Expo)
 
-Dự án này là bản tham khảo (reference) cho ứng dụng di động quản lý điều hòa thông minh, được xây dựng bằng React Native (Expo) và TypeScript.
-
-## 🚀 Công nghệ sử dụng
-- **Framework:** React Native + Expo.
-- **Ngôn ngữ:** TypeScript.
-- **Styling:** Vanilla StyleSheet với hệ thống Theme tùy chỉnh.
-- **Icons:** @expo/vector-icons (Ionicons, MaterialCommunityIcons).
-
-## 📂 Cấu trúc thư mục
-- `src/theme/`: Chứa định nghĩa màu sắc (`colors`), khoảng cách (`spacing`), và kiểu chữ (`typography`).
-- `src/components/common/`: Các component dùng chung (Button, Header, Loading).
-- `src/screens/`: Các màn hình chính (Login, Dashboard, RoomDetail, ActivityLog).
-- `src/services/`: Tách biệt logic gọi API.
-- `src/navigation/`: (Placeholder) Cấu hình điều hướng React Navigation.
-
-## 🎨 Design System
-Dựa trên phong cách **"Atmospheric Precision"**:
-- **Primary (#3B82F6):** Dành cho các tính năng làm mát (Cooling).
-- **Secondary (#F97316):** Dành cho các tính năng sưởi ấm (Heating).
-- **Tertiary (#EF4444):** Dành cho nút nguồn và cảnh báo.
-- **Surface:** Sử dụng màu trắng và các lớp đổ bóng (shadows) nhẹ để tạo chiều sâu.
+Ứng dụng di động quản lý điều hòa thông minh.
 
 ## 🛠 Cách chạy dự án
 1. Cài đặt dependencies:
@@ -32,7 +12,29 @@ Dựa trên phong cách **"Atmospheric Precision"**:
    npx expo start
    ```
 
-## 📝 Lưu ý quan trọng
-- Luôn sử dụng `theme` thay vì mã màu trực tiếp để đảm bảo tính nhất quán.
-- Tách biệt logic API vào thư mục `services`.
-- Sử dụng `ActivityLog` để ghi lại mọi thao tác quan trọng.
+## Deployment on Render.com (Web version)
+
+Dự án đã được cấu hình sẵn để triển khai phiên bản Web lên Render thông qua file `render.yaml` ở thư mục gốc.
+
+### Các bước thực hiện:
+1. Đăng nhập vào [Render Dashboard](https://dashboard.render.com).
+2. Khi deploy thông qua Blueprint, Render sẽ tự động thực hiện:
+   - Cài đặt node_modules.
+   - Chạy lệnh `npx expo export:web` để tạo thư mục `web-build`.
+   - Phục vụ ứng dụng dưới dạng trang web tĩnh.
+
+### Biến môi trường (Environment Variables):
+Để ứng dụng có thể kết nối với Backend, bạn **BẮT BUỘC** phải cấu hình biến môi trường sau trên Render (hoặc trong file `.env` local):
+
+| Biến | Giá trị |
+| :--- | :--- |
+| `EXPO_PUBLIC_BASE_URL` | URL của Backend đã deploy (ví dụ: `https://your-backend.onrender.com`) |
+
+**Lưu ý:** Trong Expo, các biến môi trường muốn sử dụng ở client side phải bắt đầu bằng tiền tố `EXPO_PUBLIC_`.
+
+### Cách lấy giá trị:
+- Sau khi bạn deploy thành công Backend trên Render, hãy copy URL của nó và dán vào phần cấu hình Environment Variables của Frontend Service trên Render.
+
+---
+## 🎨 Design System
+Dựa trên phong cách **"Atmospheric Precision"** với màu sắc hiện đại và UX mượt mà.
