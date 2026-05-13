@@ -3,13 +3,13 @@ import { RoomsService } from './rooms.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('rooms')
-@UseGuards(JwtAuthGuard)
+// @UseGuards(JwtAuthGuard)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   @Get()
   findAll(@Request() req) {
-    return this.roomsService.findAll(req.user.userId, req.user.role);
+    return this.roomsService.findAll();
   }
 
   @Get(':id')

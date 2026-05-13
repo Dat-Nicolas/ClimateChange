@@ -19,20 +19,15 @@ export class ClimateLogicService {
     let targetStatus: ACStatus | null = null;
     let targetTemp: number = defaultTemp;
 
-    // Logic: 
-    // 1. If no people -> Turn OFF
-    // 2. If people & hot -> Turn ON to defaultTemp
-    // 3. If people & cold -> Turn OFF
-    
+    // New logic:
+    // - If no people -> Turn OFF
+    // - If at least 1 person -> Turn ON to defaultTemp
+
     if (currentPeople === 0) {
       targetStatus = ACStatus.OFF;
     } else {
-      if (currentTemperature > maxTemp) {
-        targetStatus = ACStatus.ON;
-        targetTemp = defaultTemp;
-      } else if (currentTemperature < minTemp) {
-        targetStatus = ACStatus.OFF;
-      }
+      targetStatus = ACStatus.ON;
+      targetTemp = defaultTemp;
     }
 
     // Update all ACs in the room if logic applies

@@ -11,7 +11,7 @@ export class AiService {
     private climateLogic: ClimateLogicService,
   ) {}
 
-  async detectPeople(roomId: string, data: any) {
+  async detectPeople(roomId: string, data: { count?: number; image?: string }) {
     const room = await this.prisma.room.findUnique({
       where: { id: roomId },
     });
@@ -22,7 +22,10 @@ export class AiService {
 
     // In a real scenario, you'd process an image here.
     // For now, we take the count from the request or simulate it.
-    const count = data.count !== undefined ? data.count : Math.floor(Math.random() * 10);
+    const count: number =
+      typeof data.count === 'number'
+        ? data.count
+        : Math.floor(Math.random() * 10);
 
     // Update room occupancy
     await this.prisma.room.update({

@@ -27,15 +27,14 @@ export class RoomsService {
     return true;
   }
 
-  async findAll(userId: string, role: string) {
-    if (role === 'ADMIN') {
-      return this.prisma.room.findMany({
-        include: { airConditioners: true },
-      });
-    }
+  async findAll() {
+    // if (role === 'ADMIN') {
+    //   return this.prisma.room.findMany({
+    //     include: { airConditioners: true },
+    //   });
+    // }
 
     return this.prisma.room.findMany({
-      where: { userId },
       include: { airConditioners: true },
     });
   }
