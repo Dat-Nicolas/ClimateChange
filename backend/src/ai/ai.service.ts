@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ClimateLogicService } from '../climate-logic/climate-logic.service';
 
 @Injectable()
 export class AiService {
   constructor(
     private prisma: PrismaService,
     private activityLog: ActivityLogService,
+    private climateLogic: ClimateLogicService,
   ) {}
 
   async detectPeople(roomId: string, data: any) {
@@ -42,6 +44,9 @@ export class AiService {
       detectedCount: count,
       sensorLogId: log.id,
     });
+
+    // Process automation logic
+    await this.climateLogic.processAutomation(roomId);
 
     return {
       success: true,

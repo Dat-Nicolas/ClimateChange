@@ -1,12 +1,14 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import { ClimateLogicService } from '../climate-logic/climate-logic.service';
 
 @Injectable()
 export class DevicesService {
   constructor(
     private prisma: PrismaService,
     private activityLog: ActivityLogService,
+    private climateLogic: ClimateLogicService,
   ) {}
 
   async updateStatus(data: { roomId: string; temperature: number; peopleCount?: number }) {
@@ -37,6 +39,9 @@ export class DevicesService {
         peopleCount: peopleCount !== undefined ? peopleCount : room.currentPeople,
       },
     });
+
+    // Process automation logic
+    await this.climateLogic.processAutomation(roomId);
 
     return { success: true, message: 'Status updated' };
   }

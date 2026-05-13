@@ -11,9 +11,21 @@ import { AiModule } from './ai/ai.module';
 import { DevicesModule } from './devices/devices.module';
 import { BrandsModule } from './brands/brands.module';
 import { SchedulesModule } from './schedules/schedules.module';
+import { ClimateLogicModule } from './climate-logic/climate-logic.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, ActivityLogModule, RoomsModule, AirConditionersModule, AiModule, DevicesModule, BrandsModule, SchedulesModule],
+  imports: [
+    AuthModule,
+    PrismaModule,
+    ActivityLogModule,
+    RoomsModule,
+    AirConditionersModule,
+    AiModule,
+    DevicesModule,
+    BrandsModule,
+    SchedulesModule,
+    ClimateLogicModule,
+  ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
