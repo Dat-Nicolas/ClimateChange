@@ -23,6 +23,12 @@ Dự án đã được cấu hình sẵn để triển khai phiên bản Web lê
    - Chạy lệnh `npx expo export:web` để tạo thư mục `web-build`.
    - Phục vụ ứng dụng dưới dạng trang web tĩnh.
 
+### Cấu hình thủ công (nếu không dùng Blueprint):
+- **Service Type:** Static Site
+- **Root Directory:** `frontend`
+- **Build Command:** `npm install && npx expo export:web`
+- **Publish Directory:** `web-build`
+
 ### Biến môi trường (Environment Variables):
 Để ứng dụng có thể kết nối với Backend, bạn **BẮT BUỘC** phải cấu hình biến môi trường sau trên Render (hoặc trong file `.env` local):
 

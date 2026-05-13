@@ -28,6 +28,12 @@ Hệ thống đã được cấu hình sẵn file `render.yaml` ở thư mục g
 4. Render sẽ tự động nhận diện file `render.yaml` và liệt kê các dịch vụ cần tạo.
 5. Nhấn **Approve** để bắt đầu quá trình build và deploy.
 
+### Cấu hình thủ công (nếu không dùng Blueprint):
+Nếu bạn không dùng file `render.yaml`, hãy thiết lập các thông số sau:
+- **Root Directory:** `backend`
+- **Build Command:** `npm install && npx prisma generate && npm run build`
+- **Start Command:** `npm run start:prod`
+
 ### Biến môi trường (Environment Variables):
 Nếu bạn muốn cấu hình thủ công hoặc kiểm tra lại, đây là các biến quan trọng:
 
