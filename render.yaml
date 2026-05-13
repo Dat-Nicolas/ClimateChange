@@ -1,0 +1,34 @@
+services:
+  # Backend Service (NestJS)
+  - type: web
+    name: smart-ac-backend
+    env: node
+    rootDir: backend
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-ac-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+
+  # Frontend Service (Expo Web)
+  - type: web
+    name: smart-ac-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npx expo export:web
+    staticPublishPath: web-build
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+
+databases:
+  - name: smart-ac-db
+    plan: free
+    databaseName: smart_ac
+    user: admin
