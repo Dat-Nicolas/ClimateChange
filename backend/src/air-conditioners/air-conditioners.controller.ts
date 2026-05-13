@@ -5,7 +5,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 @Controller('air-conditioners')
 @UseGuards(JwtAuthGuard)
 export class AirConditionersController {
-  constructor(private readonly acService: AirConditionersService) {}
+  constructor(private readonly acService: AirConditionersService) { }
 
   @Post(':id/control')
   control(@Param('id') id: string, @Body() commandData: any, @Request() req) {
