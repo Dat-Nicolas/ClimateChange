@@ -7,9 +7,13 @@ import { PrismaModule } from './prisma/prisma.module';
 import { ActivityLogModule } from './activity-log/activity-log.module';
 import { RoomsModule } from './rooms/rooms.module';
 import { AirConditionersModule } from './air-conditioners/air-conditioners.module';
+import { AiModule } from './ai/ai.module';
+import { DevicesModule } from './devices/devices.module';
+import { BrandsModule } from './brands/brands.module';
+import { SchedulesModule } from './schedules/schedules.module';
 
 @Module({
-  imports: [AuthModule, PrismaModule, ActivityLogModule, RoomsModule, AirConditionersModule],
+  imports: [AuthModule, PrismaModule, ActivityLogModule, RoomsModule, AirConditionersModule, AiModule, DevicesModule, BrandsModule, SchedulesModule],
   controllers: [AppController],
   providers: [AppService, PrismaService],
 })
