@@ -7,6 +7,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const isProduction = process.env.NODE_ENV === 'production';
   const port = process.env.PORT || 3000;
+  const urlProduction = 'https://climatechange-9ftw.onrender.com';
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -75,12 +76,14 @@ async function bootstrap() {
 
   await app.listen(port,"0.0.0.0");
   const appUrl = await app.getUrl();
+  const swaggerUrl = isProduction ? `${urlProduction}/api` : `${appUrl}/api`;
+  
   console.log(`
 ╔═══════════════════════════════════════════════════════════╗
 ║          Climate Change API Server Started                ║
 ╠═══════════════════════════════════════════════════════════╣
-║ 🌍 Server URL: ${appUrl.padEnd(47)} ║
-║ 📚 Swagger UI: ${appUrl}/api${' '.repeat(41 - appUrl.length - 5)} ║
+║ 🌍 Server URL: ${(isProduction ? urlProduction : appUrl).padEnd(47)} ║
+║ 📚 Swagger UI: ${swaggerUrl.padEnd(47)} ║
 ║ 🔧 Environment: ${(isProduction ? 'PRODUCTION' : 'DEVELOPMENT').padEnd(43)} ║
 ║ 📝 Node Version: ${process.version.padEnd(43)} ║
 ╚═══════════════════════════════════════════════════════════╝
