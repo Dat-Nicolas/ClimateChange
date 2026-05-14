@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -73,6 +74,8 @@ async function bootstrap() {
       : '*',
     credentials: true,
   });
+
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   await app.listen(port,"0.0.0.0");
   const appUrl = await app.getUrl();

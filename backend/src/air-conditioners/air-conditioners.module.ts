@@ -7,5 +7,6 @@ import { RoomsModule } from '../rooms/rooms.module';
   imports: [RoomsModule],
   providers: [AirConditionersService],
   controllers: [AirConditionersController],
+  exports: [AirConditionersService],
 })
 export class AirConditionersModule {}

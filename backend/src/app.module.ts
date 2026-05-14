@@ -12,6 +12,7 @@ import { DevicesModule } from './devices/devices.module';
 import { BrandsModule } from './brands/brands.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { ClimateLogicModule } from './climate-logic/climate-logic.module';
+import { AcModule } from './mqtt/ac/ac.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ClimateLogicModule } from './climate-logic/climate-logic.module';
     BrandsModule,
     SchedulesModule,
     ClimateLogicModule,
+    AcModule,
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],
