@@ -1,4 +1,10 @@
-import { Controller, Get, Query, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Query,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { ActivityLogService } from './activity-log.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
@@ -7,8 +13,15 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 export class ActivityLogController {
   constructor(private readonly activityLogService: ActivityLogService) {}
 
+  // ✅ Lấy danh sách (KHÔNG cần userId)
   @Get()
-  findAll(@Query('roomId') roomId: string, @Request() req) {
-    return this.activityLogService.findAll(roomId, req.user.userId, req.user.role);
+  findAll(@Query('roomId') roomId?: string) {
+    return this.activityLogService.findAll(roomId);
+  }
+
+  // ✅ Lấy chi tiết theo id
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.activityLogService.findOne(id);
   }
 }

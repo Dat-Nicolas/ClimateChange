@@ -17,6 +17,7 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { authService } from '../services/api';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DeviceEventEmitter } from 'react-native';
 
 type NavigationProp = StackNavigationProp<RootStackParamList, 'Login'>;
 
@@ -37,8 +38,8 @@ const LoginScreen = () => {
       const response = await authService.login({ email, password });
       await AsyncStorage.setItem('user_token', response.access_token);
       await AsyncStorage.setItem('user_data', JSON.stringify(response.user));
-      
-      navigation.replace('Dashboard');
+
+      DeviceEventEmitter.emit('auth:login');
     } catch (error: any) {
       Alert.alert('Đăng nhập thất bại', error.message || 'Email hoặc mật khẩu không chính xác');
     } finally {

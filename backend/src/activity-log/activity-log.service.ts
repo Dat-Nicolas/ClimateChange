@@ -1,11 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class ActivityLogService {
   constructor(private prisma: PrismaService) {}
 
-  async log(roomId: string, userId: string | null, action: string, details?: any) {
+  // ✅ Log (giữ nguyên)
+  async log(
+    roomId: string,
+    userId: string | null,
+    action: string,
+    details?: any,
+  ) {
     return this.prisma.activityLog.create({
       data: {
         roomId,
@@ -16,16 +22,12 @@ export class ActivityLogService {
     });
   }
 
-  async findAll(roomId: string | undefined, userId: string, role: string) {
+  // ✅ Lấy tất cả log (KHÔNG filter user nữa)
+  async findAll(roomId?: string) {
     const where: any = {};
-    
+
     if (roomId) {
       where.roomId = roomId;
-    }
-
-    // If not ADMIN, only show logs for rooms the user owns
-    if (role !== 'ADMIN') {
-      where.room = { userId };
     }
 
     return this.prisma.activityLog.findMany({
@@ -33,11 +35,36 @@ export class ActivityLogService {
       include: {
         room: true,
         user: {
-          select: { fullName: true, email: true },
+          select: {
+            fullName: true,
+            email: true,
+          },
         },
       },
       orderBy: { timestamp: 'desc' },
       take: 50,
     });
+  }
+
+  // ✅ Lấy chi tiết log theo id
+  async findOne(id: string) {
+    const log = await this.prisma.activityLog.findUnique({
+      where: { id },
+      include: {
+        room: true,
+        user: {
+          select: {
+            fullName: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!log) {
+      throw new NotFoundException('Activity log not found');
+    }
+
+    return log;
   }
 }

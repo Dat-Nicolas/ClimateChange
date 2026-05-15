@@ -7,38 +7,40 @@ import {
   Switch,
   TouchableOpacity,
 } from 'react-native';
-import { theme } from '../theme';
+import { theme as lightTheme, useTheme } from '../theme';
 import Header from '../components/common/Header';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { authService } from '../services/api';
 
-type NavigationProp = StackNavigationProp<RootStackParamList, 'Settings'>;
+type NavigationProp = StackNavigationProp<RootStackParamList, 'SettingsStack'>;
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
+  const { theme, themeMode, setThemeMode } = useTheme();
+
   const [notifications, setNotifications] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
   const [autoControl, setAutoControl] = useState(true);
 
-  const SettingItem = ({ 
-    icon, 
-    label, 
-    value, 
-    onToggle, 
+  const SettingItem = ({
+    icon,
+    label,
+    value,
+    onToggle,
     type = 'switch',
-    onPress 
-  }: { 
-    icon: string, 
-    label: string, 
-    value?: boolean, 
-    onToggle?: (val: boolean) => void,
-    type?: 'switch' | 'link',
-    onPress?: () => void
+    onPress,
+  }: {
+    icon: string;
+    label: string;
+    value?: boolean;
+    onToggle?: (val: boolean) => void;
+    type?: 'switch' | 'link';
+    onPress?: () => void;
   }) => (
-    <TouchableOpacity 
-      style={styles.settingItem} 
+    <TouchableOpacity
+      style={styles.settingItem}
       onPress={onPress}
       disabled={type === 'switch' && !onPress}
     >
@@ -49,7 +51,7 @@ const SettingsScreen = () => {
       {type === 'switch' ? (
         <Switch
           value={value}
-          onValueChange={onToggle}
+          onValueChange={(v) => onToggle?.(v)}
           trackColor={{ false: theme.colors.outlineVariant, true: theme.colors.primary }}
         />
       ) : (
@@ -61,23 +63,22 @@ const SettingsScreen = () => {
   return (
     <View style={styles.container}>
       <Header title="Settings" />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        
+      <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>General</Text>
           <View style={styles.sectionContent}>
-            <SettingItem 
-              icon="notifications-outline" 
-              label="Push Notifications" 
-              value={notifications} 
-              onToggle={setNotifications} 
+            <SettingItem
+              icon="notifications-outline"
+              label="Push Notifications"
+              value={notifications}
+              onToggle={setNotifications}
             />
             <View style={styles.divider} />
-            <SettingItem 
-              icon="moon-outline" 
-              label="Dark Mode" 
-              value={darkMode} 
-              onToggle={setDarkMode} 
+            <SettingItem
+              icon="moon-outline"
+              label="Dark Mode"
+              value={themeMode === 'dark'}
+              onToggle={(v) => setThemeMode(v ? 'dark' : 'light')}
             />
           </View>
         </View>
@@ -85,18 +86,20 @@ const SettingsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Automation</Text>
           <View style={styles.sectionContent}>
-            <SettingItem 
-              icon="flash-outline" 
-              label="Eco-Mode Automation" 
-              value={autoControl} 
-              onToggle={setAutoControl} 
+            <SettingItem
+              icon="flash-outline"
+              label="Eco-Mode Automation"
+              value={autoControl}
+              onToggle={setAutoControl}
             />
             <View style={styles.divider} />
-            <SettingItem 
-              icon="time-outline" 
-              label="Schedule Management" 
+            <SettingItem
+              icon="time-outline"
+              label="Schedule Management"
               type="link"
-              onPress={() => navigation.navigate('Schedules')}
+              onPress={() =>
+                navigation.getParent()?.navigate('Schedules')
+              }
             />
           </View>
         </View>
@@ -104,28 +107,22 @@ const SettingsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
-            <SettingItem 
-              icon="person-outline" 
-              label="Profile Information" 
-              type="link"
-            />
+            <SettingItem icon="person-outline" label="Profile Information" type="link" />
             <View style={styles.divider} />
-            <SettingItem 
-              icon="lock-closed-outline" 
-              label="Security & Password" 
-              type="link"
-            />
+            <SettingItem icon="lock-closed-outline" label="Security & Password" type="link" />
           </View>
         </View>
 
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.logoutButton}
-          onPress={() => navigation.replace('Login')}
+          onPress={async () => {
+            await authService.logout();
+          }}
         >
           <Ionicons name="log-out-outline" size={22} color={theme.colors.tertiary} />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
-        
+
         <Text style={styles.versionText}>Version 1.0.0 (Production)</Text>
       </ScrollView>
     </View>
@@ -135,68 +132,72 @@ const SettingsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: lightTheme.colors.background,
   },
   scrollContent: {
-    padding: theme.spacing.md,
+    padding: lightTheme.spacing.md,
+    paddingBottom: 20,
+  },
+  scroll: {
+    flex: 1,
   },
   section: {
-    marginBottom: theme.spacing.lg,
+    marginBottom: lightTheme.spacing.lg,
   },
   sectionTitle: {
-    ...theme.typography.labelCaps,
-    color: theme.colors.textSecondary,
-    marginBottom: theme.spacing.sm,
-    marginLeft: theme.spacing.xs,
+    ...lightTheme.typography.labelCaps,
+    color: lightTheme.colors.textSecondary,
+    marginBottom: lightTheme.spacing.sm,
+    marginLeft: lightTheme.spacing.xs,
   },
   sectionContent: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.roundness.md,
-    ...theme.shadows.level1,
+    backgroundColor: lightTheme.colors.surface,
+    borderRadius: lightTheme.roundness.md,
+    ...lightTheme.shadows.level1,
     overflow: 'hidden',
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: theme.spacing.md,
+    padding: lightTheme.spacing.md,
   },
   settingLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   settingLabel: {
-    ...theme.typography.bodyMd,
-    color: theme.colors.text,
-    marginLeft: theme.spacing.md,
+    ...lightTheme.typography.bodyMd,
+    color: lightTheme.colors.text,
+    marginLeft: lightTheme.spacing.md,
   },
   divider: {
     height: 1,
-    backgroundColor: theme.colors.outlineVariant,
-    marginLeft: theme.spacing.xxl,
+    backgroundColor: lightTheme.colors.outlineVariant,
+    marginLeft: lightTheme.spacing.xxl,
   },
   logoutButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.surface,
-    padding: theme.spacing.md,
-    borderRadius: theme.roundness.md,
-    marginTop: theme.spacing.lg,
-    ...theme.shadows.level1,
+    backgroundColor: lightTheme.colors.surface,
+    padding: lightTheme.spacing.md,
+    borderRadius: lightTheme.roundness.md,
+    marginTop: lightTheme.spacing.lg,
+    ...lightTheme.shadows.level1,
   },
   logoutText: {
-    ...theme.typography.bodyMd,
-    color: theme.colors.tertiary,
+    ...lightTheme.typography.bodyMd,
+    color: lightTheme.colors.tertiary,
     fontWeight: '600',
-    marginLeft: theme.spacing.sm,
+    marginLeft: lightTheme.spacing.sm,
   },
   versionText: {
-    ...theme.typography.bodySm,
-    color: theme.colors.outline,
+    ...lightTheme.typography.bodySm,
+    color: lightTheme.colors.outline,
     textAlign: 'center',
-    marginTop: theme.spacing.xl,
-    marginBottom: theme.spacing.xl,
+    marginTop: lightTheme.spacing.xl,
+    marginBottom: lightTheme.spacing.xl,
   },
 });
 

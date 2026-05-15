@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, SafeAreaView } from 'react-native';
-import { theme } from '../../theme';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
+import { useTheme } from '../../theme';
 
 interface HeaderProps {
   title: string;
@@ -11,25 +11,18 @@ interface HeaderProps {
   rightElement?: React.ReactNode;
 }
 
-const Header: React.FC<HeaderProps> = ({
-  title,
-  showBack = false,
-  onBackPress,
-  rightElement,
-}) => {
+const Header: React.FC<HeaderProps> = ({ title, showBack = false, onBackPress, rightElement }) => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
 
   const handleBack = () => {
-    if (onBackPress) {
-      onBackPress();
-    } else {
-      navigation.goBack();
-    }
+    if (onBackPress) onBackPress();
+    else navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
+    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.surface }]}>
+      <View style={[styles.container, { borderBottomColor: theme.colors.outlineVariant }]}>
         <View style={styles.leftContainer}>
           {showBack && (
             <TouchableOpacity onPress={handleBack} style={styles.backButton}>
@@ -37,30 +30,27 @@ const Header: React.FC<HeaderProps> = ({
             </TouchableOpacity>
           )}
         </View>
-        
+
         <View style={styles.titleContainer}>
-          <Text style={styles.title} numberOfLines={1}>{title}</Text>
+          <Text style={[styles.title, { color: theme.colors.text }]} numberOfLines={1}>
+            {title}
+          </Text>
         </View>
-        
-        <View style={styles.rightContainer}>
-          {rightElement}
-        </View>
+
+        <View style={styles.rightContainer}>{rightElement}</View>
       </View>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  safeArea: {
-    backgroundColor: theme.colors.surface,
-  },
+  safeArea: {},
   container: {
     height: 56,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: theme.spacing.md,
+    paddingHorizontal: 16, // will be overridden via inline style if needed
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.outlineVariant,
   },
   leftContainer: {
     flex: 1,
@@ -75,8 +65,9 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: {
-    ...theme.typography.h3,
-    color: theme.colors.text,
+    fontSize: 20,
+    lineHeight: 28,
+    fontWeight: '600',
   },
   backButton: {
     padding: 4,

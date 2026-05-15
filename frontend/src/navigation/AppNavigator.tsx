@@ -1,46 +1,76 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { ActivityIndicator, View, DeviceEventEmitter } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import LoginScreen from '../screens/LoginScreen';
-import RegisterScreen from '../screens/RegisterScreen';
-import DashboardScreen from '../screens/DashboardScreen';
-import RoomDetailScreen from '../screens/RoomDetailScreen';
-import ActivityLogScreen from '../screens/ActivityLogScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import SchedulesScreen from '../screens/SchedulesScreen';
+import AuthStack from './AuthStack';
+import MainTabs from './MainTabs';
+
+// 🔥 IMPORT THEME PROVIDER CỦA BẠN VÀO ĐÂY
+// (Thay đổi đường dẫn đúng với cấu trúc thư mục của bạn)
+import { ThemeProvider } from '../theme/ThemeProvider'; 
 
 export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
-  Dashboard: undefined;
+  Login: undefined;  
+  Register: undefined;  
+  DashboardStack: undefined;
+  ActivityLogStack: undefined;
+  SettingsStack: undefined;
   RoomDetail: { roomId: string; roomName: string };
-  ActivityLog: undefined;
-  Settings: undefined;
+  ActivityLogDetail: { id: string };
   Schedules: undefined;
 };
 
-const Stack = createStackNavigator<RootStackParamList>();
-
 const AppNavigator = () => {
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const token = await AsyncStorage.getItem('user_token');
+        setIsLoggedIn(!!token);
+      } catch (error) {
+        console.error('Error checking auth:', error);
+        setIsLoggedIn(false);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
+
+    const logoutSub = DeviceEventEmitter.addListener('auth:logout', () => {
+      setIsLoading(true);
+      checkAuth();
+    });
+
+    const loginSub = DeviceEventEmitter.addListener('auth:login', () => {
+      setIsLoading(true);
+      checkAuth();
+    });
+
+    return () => {
+      logoutSub.remove();
+      loginSub.remove();
+    };
+  }, []);
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#F3F6FC' }}>
+        <ActivityIndicator size="large" color="#0A7A3F" />
+      </View>
+    );
+  }
+
   return (
-    <NavigationContainer>
-      <Stack.Navigator 
-        initialRouteName="Login"
-        screenOptions={{
-          headerShown: false,
-          cardStyle: { backgroundColor: '#F8F9FF' },
-        }}
-      >
-        <Stack.Screen name="Login" component={LoginScreen} />
-        <Stack.Screen name="Register" component={RegisterScreen} />
-        <Stack.Screen name="Dashboard" component={DashboardScreen} />
-        <Stack.Screen name="RoomDetail" component={RoomDetailScreen} />
-        <Stack.Screen name="ActivityLog" component={ActivityLogScreen} />
-        <Stack.Screen name="Settings" component={SettingsScreen} />
-        <Stack.Screen name="Schedules" component={SchedulesScreen} />
-      </Stack.Navigator>
-    </NavigationContainer>
+    /* 🔥 BỌC THEMEPROVIDER ĐỂ TẤT CẢ COMPONENT CON (BAO GỒM BOTTOMNAVBAR) ĐỀU DÙNG ĐƯỢC */
+    <ThemeProvider>
+      <NavigationContainer key={isLoggedIn ? "authed" : "anon"}>
+        {isLoggedIn ? <MainTabs /> : <AuthStack />}
+      </NavigationContainer>
+    </ThemeProvider>
   );
 };
 
