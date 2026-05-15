@@ -52,33 +52,21 @@ async function main() {
   const daikinBrand = await prisma.brand.create({
     data: {
       name: 'Daikin',
-      irProtocol: 'DAIKIN',
-      irConfig: {
-        protocol: 'DAIKIN',
-        addressBytes: 3,
-      },
+
     },
   });
 
   const lgBrand = await prisma.brand.create({
     data: {
       name: 'LG',
-      irProtocol: 'LG',
-      irConfig: {
-        protocol: 'LG',
-        addressBytes: 2,
-      },
+
     },
   });
 
   const samsungBrand = await prisma.brand.create({
     data: {
       name: 'Samsung',
-      irProtocol: 'SAMSUNG',
-      irConfig: {
-        protocol: 'SAMSUNG',
-        addressBytes: 2,
-      },
+
     },
   });
 
@@ -92,8 +80,6 @@ async function main() {
       currentPeople: 15,
       currentTemperature: 24.5,
       peoplePerAC: 10,
-      minTemp: 22,
-      maxTemp: 28,
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',
@@ -109,8 +95,7 @@ async function main() {
       currentPeople: 8,
       currentTemperature: 25.2,
       peoplePerAC: 10,
-      minTemp: 22,
-      maxTemp: 28,
+
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',
@@ -126,8 +111,6 @@ async function main() {
       currentPeople: 12,
       currentTemperature: 23.8,
       peoplePerAC: 10,
-      minTemp: 22,
-      maxTemp: 28,
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',

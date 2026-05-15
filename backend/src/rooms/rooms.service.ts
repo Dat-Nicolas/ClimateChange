@@ -1,12 +1,24 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  ForbiddenException,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
+import {
+  IRButtonSendResult,
+  SendIRButtonResponse,
+} from './dto/ir-button-response.dto';
+import { AcGateway } from 'src/mqtt/ac/ac.gateway';
+import { SendIRButtonDto } from './dto/send-ir-button.dto';
+import { ButtonACCommand } from 'src/mqtt/ac/dto/ac-control.dto';
 
 @Injectable()
 export class RoomsService {
   constructor(
     private prisma: PrismaService,
     private activityLog: ActivityLogService,
+    private acGateway: AcGateway,
   ) {}
 
   async validateRoomAccess(roomId: string, userId: string, role: string) {
@@ -28,22 +40,15 @@ export class RoomsService {
   }
 
   async findAll() {
-    // if (role === 'ADMIN') {
-    //   return this.prisma.room.findMany({
-    //     include: { airConditioners: true },
-    //   });
-    // }
-
     return this.prisma.room.findMany({
       include: { airConditioners: true },
     });
   }
 
-  async findOne(id: string, userId: string, role: string) {
-    await this.validateRoomAccess(id, userId, role);
+  async findOne(id: string) {
     return this.prisma.room.findUnique({
       where: { id },
-      include: { 
+      include: {
         airConditioners: { include: { brand: true } },
         schedules: true,
       },
@@ -81,5 +86,117 @@ export class RoomsService {
 
     await this.activityLog.log(id, userId, 'DELETE_ROOM', { name: room.name });
     return room;
+  }
+
+  async getSettings(roomId: string, userId: string, role: string) {
+    return this.prisma.room.findUnique({
+      where: { id: roomId },
+      select: {
+        id: true,
+        name: true,
+        minPeopleToTurnOn: true,
+        minTempToTurnOn: true,
+        acAutoControlEnabled: true,
+        defaultTemp: true,
+        autoMode: true,
+        startTime: true,
+        endTime: true,
+      },
+    });
+  }
+
+  async updateSettings(
+    roomId: string,
+    data: any,
+    userId: string,
+    role: string,
+  ) {
+    return this.prisma.room.update({
+      where: { id: roomId },
+      data: {
+        minPeopleToTurnOn: data.minPeopleToTurnOn,
+        minTempToTurnOn: data.minTempToTurnOn,
+        acAutoControlEnabled: data.acAutoControlEnabled,
+        defaultTemp: data.defaultTemp,
+        autoMode: data.autoMode,
+      },
+    });
+  }
+  async sendIRButton(
+    roomId: string,
+    dto: SendIRButtonDto,
+  ) {
+    // await this.validateRoomAccess(roomId, userId, role);
+
+    // Lấy danh sách điều hòa trong phòng
+    const whereCondition: any = { roomId };
+    if (dto.airConditionerId) {
+      whereCondition.id = dto.airConditionerId;
+    }
+
+    const acs = await this.prisma.airConditioner.findMany({
+      where: whereCondition,
+      include: { brand: true },
+    });
+
+    if (acs.length === 0) {
+      throw new NotFoundException('No air conditioner found in this room');
+    }
+
+    const results: IRButtonSendResult[] = [];
+
+    for (const ac of acs) {
+      // Tìm mã IR
+      const irButton = await this.prisma.iRButton.findUnique({
+        where: {
+          brandId_buttonName: {
+            brandId: ac.brandId,
+            buttonName: dto.buttonName,
+          },
+        },
+      });
+
+      if (!irButton) {
+        results.push({
+          acId: ac.id,
+          acName: ac.name,
+          buttonName: dto.buttonName,
+          sent: false,
+          message: `Button ${dto.buttonName} not found for brand`,
+        });
+        continue;
+      }
+
+      // ====================== GỬI MQTT ======================
+      const command: ButtonACCommand = {
+        buttonName: dto.buttonName,
+        irCode: irButton.irCode,
+        irName: irButton.irName,
+        brand: ac.brand.name,
+      };
+
+      this.acGateway.emitCommand(roomId, command);
+
+      results.push({
+        acId: ac.id,
+        acName: ac.name,
+        buttonName: dto.buttonName,
+        irCode: irButton.irCode,
+        sent: true,
+      });
+    }
+
+    // // Log activity
+    // await this.activityLog.log(roomId, userId, 'SEND_IR_BUTTON', {
+    //   buttonName: buttonNameUpper,
+    //   targetAc: dto.airConditionerId || 'all',
+    //   count: results.length,
+    // });
+
+    return {
+      message: 'IR command sent via MQTT',
+      buttonName: dto.buttonName,
+      results,
+    };
   }
 }

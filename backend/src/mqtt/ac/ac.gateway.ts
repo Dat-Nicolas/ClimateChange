@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 
 import * as mqtt from 'mqtt';
+import { ButtonACCommand } from './dto/ac-control.dto';
 
 @Injectable()
 
@@ -265,7 +266,7 @@ implements
 
         roomId: string,
 
-        command: any
+        command: ButtonACCommand
     ) {
 
         const prev =

@@ -3,7 +3,6 @@ import { BrandsService } from './brands.service';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('brands')
-@UseGuards(JwtAuthGuard)
 export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
 

@@ -48,39 +48,45 @@ model User {
 }
 
 model Room {
-  id                 String           @id @default(uuid())
+  id                 String @id @default(uuid())
   name               String
   location           String
-  currentPeople      Int              @default(0)
-  currentTemperature Float            @default(26)
-  peoplePerAC        Int              @default(10)
-  minTemp            Float            @default(22)
-  maxTemp            Float            @default(28)
-  defaultTemp        Float            @default(25)
-  autoMode           Boolean          @default(true)
-  startTime          String           @default("08:00")
-  endTime            String           @default("18:00")
+  currentPeople      Int    @default(0)
+  currentTemperature Float  @default(26)
 
-  userId             String
-  user               User             @relation(fields: [userId], references: [id], onDelete: Cascade)
-  airConditioners    AirConditioner[]
-  sensorLogs         SensorLog[]
-  activityLogs       ActivityLog[]
-  schedules          Schedule[]
-  attendanceLogs     AttendanceLog[]
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  minPeopleToTurnOn Int     @default(1)
+  minTempToTurnOn   Float   @default(28)
+  peoplePerAC       Int     @default(10)
+  defaultTemp       Float   @default(25)
+  autoMode          Boolean @default(true)
+  startTime         String  @default("08:00")
+  endTime           String  @default("18:00")
+
+  acAutoControlEnabled Boolean @default(true)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  airConditioners AirConditioner[]
+  sensorLogs      SensorLog[]
+  activityLogs    ActivityLog[]
+  schedules       Schedule[]
+  attendanceLogs  AttendanceLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
 model Brand {
-  id              String           @id @default(uuid())
-  name            String           @unique
-  irProtocol      String
-  irConfig        Json
-  createdAt       DateTime         @default(now())
+  id   String @id @default(uuid())
+  name String @unique
+
   airConditioners AirConditioner[]
+  irButtons       IRButton[]
+
+  createdAt DateTime @default(now())
 }
 
 model AirConditioner {
@@ -98,6 +104,23 @@ model AirConditioner {
 
   @@index([brandId])
   @@index([roomId])
+}
+
+model IRButton {
+  id          String     @id @default(uuid())
+  brandId     String
+  buttonName  ButtonCode
+  irCode      String
+  irName      String
+  description String?
+
+  brand Brand @relation(fields: [brandId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([brandId, buttonName])
+  @@index([brandId])
 }
 
 model SensorLog {
@@ -148,4 +171,23 @@ model AttendanceLog {
   imageUrl  String?
   createdAt DateTime @default(now())
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+enum ButtonCode {
+  POWER_ON
+  POWER_OFF
+  TEMP_17
+  TEMP_18
+  TEMP_19
+  TEMP_20
+  TEMP_21
+  TEMP_22
+  TEMP_23
+  TEMP_24
+  TEMP_25
+  TEMP_26
+  TEMP_27
+  TEMP_28
+  TEMP_29
+  TEMP_30
 }
