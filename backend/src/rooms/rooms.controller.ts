@@ -18,7 +18,6 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 @ApiTags('Rooms')
 @ApiBearerAuth()
 @Controller('rooms')
-@UseGuards(JwtAuthGuard)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
@@ -26,7 +25,7 @@ export class RoomsController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách tất cả phòng' })
   findAll(@Request() req) {
-    return this.roomsService.findAll(req.user.userId, req.user.role);
+    return this.roomsService.findAll();
   }
 
   @Get(':id')
@@ -47,13 +46,10 @@ export class RoomsController {
   updateSettings(
     @Param('id') id: string,
     @Body() updateRoomSettingsDto: UpdateRoomSettingsDto,
-    @Request() req,
   ) {
     return this.roomsService.updateSettings(
       id,
       updateRoomSettingsDto,
-      req.user?.userId,
-      req.user?.role,
     );
   }
 

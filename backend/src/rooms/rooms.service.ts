@@ -12,6 +12,7 @@ import {
 import { AcGateway } from 'src/mqtt/ac/ac.gateway';
 import { SendIRButtonDto } from './dto/send-ir-button.dto';
 import { ButtonACCommand } from 'src/mqtt/ac/dto/ac-control.dto';
+import { UpdateRoomSettingsDto } from './dto/update-room-settings.dto';
 
 @Injectable()
 export class RoomsService {
@@ -39,15 +40,8 @@ export class RoomsService {
     return true;
   }
 
-  async findAll(userId: string, role: string) {
-    if (role === 'ADMIN') {
-      return this.prisma.room.findMany({
-        include: { airConditioners: true },
-      });
-    }
-
+  async findAll() {
     return this.prisma.room.findMany({
-      where: { userId },
       include: { airConditioners: true },
     });
   }
@@ -104,7 +98,6 @@ export class RoomsService {
         minPeopleToTurnOn: true,
         minTempToTurnOn: true,
         acAutoControlEnabled: true,
-        defaultTemp: true,
         autoMode: true,
         startTime: true,
         endTime: true,
@@ -113,22 +106,42 @@ export class RoomsService {
   }
 
   async updateSettings(
-    roomId: string,
-    data: any,
-    userId: string,
-    role: string,
-  ) {
-    return this.prisma.room.update({
-      where: { id: roomId },
-      data: {
-        minPeopleToTurnOn: data.minPeopleToTurnOn,
-        minTempToTurnOn: data.minTempToTurnOn,
-        acAutoControlEnabled: data.acAutoControlEnabled,
-        defaultTemp: data.defaultTemp,
-        autoMode: data.autoMode,
+  roomId: string,
+  data: UpdateRoomSettingsDto,
+) {
+  return this.prisma.room.update({
+    where: {
+      id: roomId,
+    },
+
+    data: {
+      minPeopleToTurnOn:
+        data.minPeopleToTurnOn,
+
+      minTempToTurnOn:
+        data.minTempToTurnOn,
+
+      autoMode:
+        data.autoMode,
+
+      // ==========================
+      // UPDATE ACS
+      // ==========================
+
+      airConditioners: {
+        set: (data.airConditionerIds ?? []).map(
+          (id: string) => ({
+            id,
+          }),
+        ),
       },
-    });
-  }
+    },
+
+    include: {
+      airConditioners: true,
+    },
+  });
+}
   async sendIRButton(roomId: string, dto: SendIRButtonDto) {
     // await this.validateRoomAccess(roomId, userId, role);
 

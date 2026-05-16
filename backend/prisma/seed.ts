@@ -80,7 +80,6 @@ async function main() {
           currentTemperature: 25,
           peoplePerAC: 10,
           minPeopleToTurnOn: 5,
-          defaultTemp: 25,
           autoMode: true,
           startTime: '08:00',
           endTime: '18:00',
@@ -199,7 +198,6 @@ async function main() {
     await prisma.schedule.create({
       data: {
         roomId: rooms[random(0, rooms.length - 1)].id,
-        dayOfWeek: day as any,
         startTime: '08:00',
         endTime: '18:00',
         isActive: Math.random() > 0.2,

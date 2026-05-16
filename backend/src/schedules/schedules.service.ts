@@ -89,7 +89,6 @@ export class SchedulesService {
     return this.prisma.schedule.create({
       data: {
         roomId: data.roomId,
-        dayOfWeek: data.dayOfWeek,
         startTime: data.startTime,
         endTime: data.endTime,
         isActive: data.isActive ?? true,
