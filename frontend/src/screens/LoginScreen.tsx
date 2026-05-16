@@ -55,7 +55,7 @@ const LoginScreen = () => {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.header}>
           <Text style={styles.title}>Smart AC</Text>
-          <Text style={styles.subtitle}>Climate Intelligence System</Text>
+          <Text style={styles.subtitle}>Hệ thống Thông minh Khí hậu</Text>
         </View>
 
         <View style={styles.form}>

@@ -1,12 +1,27 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, User, Room, Brand } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Starting database seed...');
+function random(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
 
-  // Clear existing data (đúng thứ tự để tránh FK lỗi)
+// 👉 map thứ sang tiếng Việt
+const dayMap: Record<string, string> = {
+  MONDAY: 'Thứ 2',
+  TUESDAY: 'Thứ 3',
+  WEDNESDAY: 'Thứ 4',
+  THURSDAY: 'Thứ 5',
+  FRIDAY: 'Thứ 6',
+  SATURDAY: 'Thứ 7',
+  SUNDAY: 'Chủ nhật',
+};
+
+async function main() {
+  console.log('🌱 Seeding database...');
+
+  // ================= CLEAR =================
   await prisma.attendanceLog.deleteMany();
   await prisma.schedule.deleteMany();
   await prisma.activityLog.deleteMany();
@@ -16,265 +31,205 @@ async function main() {
   await prisma.brand.deleteMany();
   await prisma.user.deleteMany();
 
-  // Create users
-  const hashedPassword = await bcrypt.hash('password123', 10);
+  // ================= USERS =================
+  const password = await bcrypt.hash('123456', 10);
+  const users: User[] = [];
 
-  const adminUser = await prisma.user.create({
-    data: {
-      email: 'admin@climatechange.com',
-      password: hashedPassword,
-      fullName: 'Admin User',
-      role: 'ADMIN',
-    },
-  });
-
-  const user1 = await prisma.user.create({
-    data: {
-      email: 'user1@climatechange.com',
-      password: hashedPassword,
-      fullName: 'John Doe',
-      role: 'USER',
-    },
-  });
-
-  const user2 = await prisma.user.create({
-    data: {
-      email: 'user2@climatechange.com',
-      password: hashedPassword,
-      fullName: 'Jane Smith',
-      role: 'USER',
-    },
-  });
-
-  console.log('✅ Created users');
-
-  // ✅ FIX: thêm irProtocol + irConfig
-  const daikinBrand = await prisma.brand.create({
-    data: {
-      name: 'Daikin',
-      irProtocol: 'NEC',
-      // irConfig: {},
-    },
-  });
-
-  const lgBrand = await prisma.brand.create({
-    data: {
-      name: 'LG',
-      irProtocol: 'NEC',
-      // irConfig: {},
-    },
-  });
-
-  const samsungBrand = await prisma.brand.create({
-    data: {
-      name: 'Samsung',
-      irProtocol: 'NEC',
-      // irConfig: {},
-    },
-  });
-
-  console.log('✅ Created brands');
-
-  // ✅ FIX: thêm minPeopleToTurnOn (nếu schema có)
-  const room1 = await prisma.room.create({
-    data: {
-      name: 'a201',
-      location: 'Floor 1',
-      currentPeople: 15,
-      currentTemperature: 24.5,
-      peoplePerAC: 10,
-      minPeopleToTurnOn: 5,
-      defaultTemp: 25,
-      autoMode: true,
-      startTime: '08:00',
-      endTime: '18:00',
-      userId: user1.id,
-    },
-  });
-
-  const room2 = await prisma.room.create({
-    data: {
-      name: 'b202',
-      location: 'Floor 2',
-      currentPeople: 8,
-      currentTemperature: 25.2,
-      peoplePerAC: 10,
-      minPeopleToTurnOn: 5,
-      defaultTemp: 25,
-      autoMode: true,
-      startTime: '08:00',
-      endTime: '18:00',
-      userId: user1.id,
-    },
-  });
-
-  const room3 = await prisma.room.create({
-    data: {
-      name: 'c203',
-      location: 'Floor 3',
-      currentPeople: 12,
-      currentTemperature: 23.8,
-      peoplePerAC: 10,
-      minPeopleToTurnOn: 5,
-      defaultTemp: 25,
-      autoMode: true,
-      startTime: '08:00',
-      endTime: '18:00',
-      userId: user2.id,
-    },
-  });
-
-  console.log('✅ Created rooms');
-
-  // Air conditioners
-  await prisma.airConditioner.createMany({
-    data: [
-      {
-        name: 'AC Unit 1',
-        brandId: daikinBrand.id,
-        roomId: room1.id,
-        status: 'ON',
-        currentTemp: 24.5,
-        mode: 'COOL',
+  for (let i = 1; i <= 10; i++) {
+    const user = await prisma.user.create({
+      data: {
+        email: `user${i}@mail.com`,
+        password,
+        fullName: `User ${i}`,
+        role: i === 1 ? 'ADMIN' : 'USER',
       },
-      {
-        name: 'AC Unit 2',
-        brandId: lgBrand.id,
-        roomId: room1.id,
-        status: 'ON',
-        currentTemp: 24.5,
-        mode: 'COOL',
-      },
-      {
-        name: 'AC Unit 3',
-        brandId: samsungBrand.id,
-        roomId: room2.id,
-        status: 'OFF',
-        currentTemp: 25.2,
-        mode: 'AUTO',
-      },
-      {
-        name: 'AC Unit 4',
-        brandId: daikinBrand.id,
-        roomId: room3.id,
-        status: 'ON',
-        currentTemp: 23.8,
-        mode: 'DRY',
-      },
-    ],
-  });
-
-  console.log('✅ Created air conditioners');
-
-  // Sensor logs
-  const now = new Date();
-  for (let i = 0; i < 10; i++) {
-    await prisma.sensorLog.createMany({
-      data: [
-        {
-          roomId: room1.id,
-          peopleCount: Math.floor(Math.random() * 20),
-          temperature: 24 + Math.random() * 2,
-          timestamp: new Date(now.getTime() - i * 60000),
-        },
-        {
-          roomId: room2.id,
-          peopleCount: Math.floor(Math.random() * 15),
-          temperature: 25 + Math.random() * 2,
-          timestamp: new Date(now.getTime() - i * 60000),
-        },
-      ],
     });
+    users.push(user);
   }
 
-  console.log('✅ Created sensor logs');
+  console.log('✅ Users created');
 
-  // Activity logs
-  await prisma.activityLog.createMany({
-    data: [
-      {
-        roomId: room1.id,
-        userId: user1.id,
-        action: 'AC_TURNED_ON',
-        details: { mode: 'COOL', temperature: 25 },
-        timestamp: new Date(now.getTime() - 3600000),
+  // ================= BRANDS =================
+  const brandNames = ['Daikin', 'LG', 'Samsung', 'Panasonic', 'Toshiba'];
+  const brands: Brand[] = [];
+
+  for (let i = 0; i < 10; i++) {
+    const brand = await prisma.brand.create({
+      data: {
+        name: `${brandNames[i % brandNames.length]} ${i + 1}`,
+        irProtocol: 'NEC',
       },
-      {
-        roomId: room1.id,
-        userId: user1.id,
-        action: 'TEMPERATURE_ADJUSTED',
-        details: { from: 24, to: 25 },
-        timestamp: new Date(now.getTime() - 1800000),
-      },
-      {
-        roomId: room2.id,
-        userId: user1.id,
-        action: 'MODE_CHANGED',
-        details: { from: 'COOL', to: 'AUTO' },
-      },
-    ],
-  });
+    });
+    brands.push(brand);
+  }
 
-  console.log('✅ Created activity logs');
+  console.log('✅ Brands created');
 
-  // Schedules
-  const daysOfWeek = [
-    'MONDAY','TUESDAY','WEDNESDAY',
-    'THURSDAY','FRIDAY','SATURDAY','SUNDAY',
-  ];
+  // ================= ROOMS + SENSOR =================
+  const rooms: Room[] = [];
 
-  for (const day of daysOfWeek) {
-    await prisma.schedule.createMany({
-      data: [
-        {
-          roomId: room1.id,
-          dayOfWeek: day as any,
+  for (let floor = 1; floor <= 5; floor++) {
+    for (let roomNum = 1; roomNum <= 5; roomNum++) {
+      const roomName = `A${floor}0${roomNum}`;
+
+      const room = await prisma.room.create({
+        data: {
+          name: roomName,
+          location: `Floor ${floor}`,
+          currentPeople: random(0, 40),
+          currentTemperature: 25,
+          peoplePerAC: 10,
+          minPeopleToTurnOn: 5,
+          defaultTemp: 25,
+          autoMode: true,
           startTime: '08:00',
           endTime: '18:00',
-          isActive: day !== 'SATURDAY' && day !== 'SUNDAY',
+          userId: users[random(0, users.length - 1)].id,
         },
-        {
-          roomId: room2.id,
-          dayOfWeek: day as any,
-          startTime: '07:00',
-          endTime: '19:00',
-          isActive: day !== 'SUNDAY',
+      });
+
+      rooms.push(room);
+
+      let latestTemp = 25;
+
+      const tempScenario = [24, 25, 26, 27, 28];
+
+
+      await prisma.sensorLog.create({
+        data: {
+          roomId: room.id,
+          peopleCount: random(0, 50),
+          temperature: tempScenario[0],
+          timestamp: new Date(Date.now() - 4 * 60000),
         },
-      ],
+      });
+
+      await prisma.sensorLog.create({
+        data: {
+          roomId: room.id,
+          peopleCount: random(0, 50),
+          temperature: tempScenario[1],
+          timestamp: new Date(Date.now() - 3 * 60000),
+        },
+      });
+
+      await prisma.sensorLog.create({
+        data: {
+          roomId: room.id,
+          peopleCount: random(0, 50),
+          temperature: tempScenario[2],
+          timestamp: new Date(Date.now() - 2 * 60000),
+        },
+      });
+
+      await prisma.sensorLog.create({
+        data: {
+          roomId: room.id,
+          peopleCount: random(0, 50),
+          temperature: tempScenario[3],
+          timestamp: new Date(Date.now() - 1 * 60000),
+        },
+      });
+
+      await prisma.sensorLog.create({
+        data: {
+          roomId: room.id,
+          peopleCount: random(0, 50),
+          temperature: tempScenario[4],
+          timestamp: new Date(),
+        },
+      });
+
+      await prisma.room.update({
+        where: { id: room.id },
+        data: { currentTemperature: latestTemp },
+      });
+    }
+  }
+
+  console.log('✅ Rooms + SensorLogs synced');
+
+  // ================= AIR CONDITIONERS =================
+  for (let i = 0; i < rooms.length; i++) {
+    await prisma.airConditioner.create({
+      data: {
+        name: `AC ${i + 1}`,
+        brandId: brands[i % brands.length].id,
+        roomId: rooms[i].id,
+        status: Math.random() > 0.5 ? 'ON' : 'OFF',
+        currentTemp: random(22, 28),
+        mode: ['COOL', 'AUTO', 'DRY'][random(0, 2)] as any,
+      },
     });
   }
 
-  console.log('✅ Created schedules');
+  console.log('✅ AirConditioners created');
 
-  // Attendance logs
-  for (let i = 0; i < 5; i++) {
-    await prisma.attendanceLog.createMany({
-      data: [
-        {
-          roomId: room1.id,
-          className: 'Class A',
-          period: i + 1,
-          count: Math.floor(Math.random() * 30) + 10,
-          imageUrl: `https://example.com/attendance/room1/period${i + 1}.jpg`,
-        },
-        {
-          roomId: room2.id,
-          className: 'Class B',
-          period: i + 1,
-          count: Math.floor(Math.random() * 25) + 5,
-          imageUrl: `https://example.com/attendance/room2/period${i + 1}.jpg`,
-        },
-      ],
+  // ================= ACTIVITY LOG =================
+  const actions = ['AC_ON', 'AC_OFF', 'TEMP_CHANGE', 'MODE_CHANGE'];
+
+  for (let i = 0; i < 20; i++) {
+    await prisma.activityLog.create({
+      data: {
+        roomId: rooms[random(0, rooms.length - 1)].id,
+        userId: users[random(0, users.length - 1)].id,
+        action: actions[random(0, actions.length - 1)],
+        details: { note: 'Auto generated' },
+        timestamp: new Date(),
+      },
     });
   }
 
-  console.log('✅ Created attendance logs');
-  console.log('✨ Database seed completed successfully!');
+  console.log('✅ Activity logs created');
+
+  // ================= SCHEDULE =================
+  const days = [
+    'MONDAY',
+    'TUESDAY',
+    'WEDNESDAY',
+    'THURSDAY',
+    'FRIDAY',
+    'SATURDAY',
+    'SUNDAY',
+  ];
+
+  for (let i = 0; i < 20; i++) {
+    const day = days[random(0, 6)];
+
+    await prisma.schedule.create({
+      data: {
+        roomId: rooms[random(0, rooms.length - 1)].id,
+        dayOfWeek: day as any,
+        startTime: '08:00',
+        endTime: '18:00',
+        isActive: Math.random() > 0.2,
+      },
+    });
+  }
+
+  console.log('✅ Schedules created');
+
+  // ================= ATTENDANCE =================
+  for (let i = 0; i < 20; i++) {
+    await prisma.attendanceLog.create({
+      data: {
+        roomId: rooms[random(0, rooms.length - 1)].id,
+        className: `Class ${String.fromCharCode(65 + random(0, 5))}`,
+        period: random(1, 10),
+        count: random(10, 60),
+        imageUrl: `https://picsum.photos/200?random=${i}`,
+      },
+    });
+  }
+
+  console.log('✅ Attendance logs created');
+
+  console.log('✨ SEED COMPLETED SUCCESSFULLY');
 }
 
 main()
   .catch((e) => {
-    console.error('❌ Error during seed:', e);
+    console.error('❌ Seed error:', e);
     process.exit(1);
   })
   .finally(async () => {

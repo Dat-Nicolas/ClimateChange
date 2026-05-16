@@ -150,7 +150,7 @@ model ActivityLog {
 model Schedule {
   id        String    @id @default(uuid())
   roomId    String
-  dayOfWeek DayOfWeek
+  dayOfWeek String
   startTime String
   endTime   String
   isActive  Boolean   @default(true)

@@ -85,7 +85,7 @@ export const roomService = {
 
 export const acService = {
   controlAC: (acId: string, data: any) =>
-    api.post(`/air-conditioners/${acId}/control`, data),
+    api.patch(`/air-conditioners/${acId}`, data),
 };
 
 export const logService = {

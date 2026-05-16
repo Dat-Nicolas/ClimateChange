@@ -19,7 +19,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { RootStackParamList } from "../navigation/AppNavigator";
-import { roomService } from "../services/api";
+import { roomService, weatherService } from "../services/api";
 import { useTheme } from "../theme/ThemeProvider";
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "DashboardStack">;
@@ -56,6 +56,7 @@ const DashboardScreen = () => {
   const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_ROOMS);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string>("");
+  const [weatherTemp, setWeatherTemp] = useState<number | null>(null);
 
   const BOTTOM_NAV_HEIGHT = 70;
 
@@ -66,6 +67,19 @@ const DashboardScreen = () => {
       UIManager.setLayoutAnimationEnabledExperimental
     ) {
       UIManager.setLayoutAnimationEnabledExperimental(true);
+    }
+  }, []);
+
+  const fetchWeather = useCallback(async () => {
+    try {
+      const data = await weatherService.getCurrentWeather();
+      const temp = data?.current?.temperature_2m ?? null;
+      if (temp !== null) {
+        setWeatherTemp(Number(temp));
+      }
+    } catch (e) {
+      console.error("Fetch weather error:", e);
+      setWeatherTemp(null);
     }
   }, []);
 
@@ -114,7 +128,8 @@ const DashboardScreen = () => {
   // Load rooms on mount
   useEffect(() => {
     fetchRooms();
-  }, [fetchRooms]);
+    fetchWeather();
+  }, [fetchRooms, fetchWeather]);
 
   useEffect(() => {
     let mounted = true;
@@ -146,22 +161,31 @@ const DashboardScreen = () => {
   useFocusEffect(
     useCallback(() => {
       fetchRooms();
-    }, [fetchRooms]),
+      fetchWeather();
+    }, [fetchRooms, fetchWeather]),
   );
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchRooms();
-  }, [fetchRooms]);
+    fetchWeather();
+  }, [fetchRooms, fetchWeather]);
 
   const filteredRooms = useMemo(() => {
+    let result = rooms;
+
     if (activeFilter === "FLOOR_4") {
-      return rooms.filter((room) => room.name.toUpperCase().startsWith("A4"));
+      result = rooms.filter((room) => room.name.toUpperCase().startsWith("A4"));
+    } else if (activeFilter === "FLOOR_5") {
+      result = rooms.filter((room) => room.name.toUpperCase().startsWith("A5"));
     }
-    if (activeFilter === "FLOOR_5") {
-      return rooms.filter((room) => room.name.toUpperCase().startsWith("A5"));
-    }
-    return rooms;
+
+    // 👉 SORT THEO SỐ PHÒNG
+    return result.sort((a, b) => {
+      const numA = parseInt(a.name.replace(/\D/g, "")); // A401 -> 401
+      const numB = parseInt(b.name.replace(/\D/g, ""));
+      return numA - numB;
+    });
   }, [rooms, activeFilter]);
 
   const showEmpty = !isLoading && filteredRooms.length === 0;
@@ -197,8 +221,13 @@ const DashboardScreen = () => {
   }, [rooms]);
 
   const outsideTemp = useMemo(() => {
+    // Nếu có dữ liệu thực từ API thời tiết, sử dụng nó
+    if (weatherTemp !== null) {
+      return weatherTemp;
+    }
+    // Nếu không, tính toán từ nhiệt độ trung bình các phòng
     return Number((averageTemp + 8).toFixed(1));
-  }, [averageTemp]);
+  }, [weatherTemp, averageTemp]);
 
   const handleRoomPress = useCallback(
     async (roomId: string, roomName: string) => {
@@ -219,7 +248,11 @@ const DashboardScreen = () => {
         }
       }
 
-      navigation.navigate("RoomDetail", { roomId, roomName, userId: nextUserId });
+      navigation.navigate("RoomDetail", {
+        roomId,
+        roomName,
+        userId: nextUserId,
+      });
     },
     [navigation, userId],
   );
@@ -306,8 +339,8 @@ const DashboardScreen = () => {
           marginBottom: 4,
         },
         systemValue: {
-          fontSize: 32,
-          lineHeight: 38,
+          fontSize: 24,
+          lineHeight: 30,
           fontWeight: "800",
           color: theme.colors.text,
           marginBottom: 12,
@@ -350,7 +383,7 @@ const DashboardScreen = () => {
           marginBottom: 12,
         },
         sectionTitle: {
-          fontSize: 22,
+          fontSize: 18,
           fontWeight: "800",
           color: theme.colors.text,
           marginBottom: 10,
@@ -402,8 +435,8 @@ const DashboardScreen = () => {
           alignItems: "center",
         },
         roomName: {
-          fontSize: 44,
-          lineHeight: 48,
+          fontSize: 28,
+          lineHeight: 32,
           fontWeight: "800",
           color: theme.colors.text,
         },
@@ -458,8 +491,8 @@ const DashboardScreen = () => {
           alignItems: "flex-end",
         },
         tempText: {
-          fontSize: 34,
-          lineHeight: 38,
+          fontSize: 26,
+          lineHeight: 30,
           fontWeight: "800",
           color: theme.colors.text,
         },
@@ -547,12 +580,14 @@ const DashboardScreen = () => {
                   Nhiệt độ ngoài trời
                 </Text>
                 <Text style={styles.systemMetricValue}>
-                  {outsideTemp}°C
+                  {weatherTemp !== null
+                    ? `${weatherTemp}°C`
+                    : `${outsideTemp}°C`}
                 </Text>
               </View>
             </View>
 
-            <View style={styles.systemMetric}>
+            {/* <View style={styles.systemMetric}>
               <View style={styles.systemMetricIcon}>
                 <Ionicons
                   name="thermometer-outline"
@@ -568,7 +603,7 @@ const DashboardScreen = () => {
                   {averageTemp}°C
                 </Text>
               </View>
-            </View>
+            </View> */}
           </View>
         </View>
 
@@ -602,7 +637,14 @@ const DashboardScreen = () => {
         </View>
       </>
     ),
-    [styles, outsideTemp, averageTemp, activeFilter, theme.colors.primary],
+    [
+      styles,
+      outsideTemp,
+      averageTemp,
+      activeFilter,
+      theme.colors.primary,
+      weatherTemp,
+    ],
   );
 
   const ListEmptyComponent = useCallback(() => {
@@ -653,7 +695,9 @@ const DashboardScreen = () => {
               <MaterialCommunityIcons
                 name={isCooling ? "snowflake" : "fan"}
                 size={12}
-                color={isCooling ? theme.colors.success : theme.colors.textSecondary}
+                color={
+                  isCooling ? theme.colors.success : theme.colors.textSecondary
+                }
               />
             </View>
           </View>
@@ -661,9 +705,7 @@ const DashboardScreen = () => {
           <View
             style={[
               styles.statusBadge,
-              isCooling
-                ? styles.statusBadgeCooling
-                : styles.statusBadgeStandby,
+              isCooling ? styles.statusBadgeCooling : styles.statusBadgeStandby,
             ]}
           >
             <Text
@@ -678,7 +720,9 @@ const DashboardScreen = () => {
 
           <Text style={styles.metricLabel}>Hiện tại</Text>
           <View style={styles.metricRow}>
-            <Text style={styles.tempText}>{item.currentTemperature.toFixed(1)}°C</Text>
+            <Text style={styles.tempText}>
+              {item.currentTemperature.toFixed(0)}°C
+            </Text>
             <View style={styles.peopleWrap}>
               <Ionicons
                 name="people-outline"
@@ -707,20 +751,14 @@ const DashboardScreen = () => {
       <View style={styles.topBar}>
         <View style={styles.brandWrap}>
           <View style={styles.logoDot}>
-            <Ionicons name="snow-outline" size={14} color={theme.colors.success} />
+            <Ionicons
+              name="snow-outline"
+              size={14}
+              color={theme.colors.success}
+            />
           </View>
           <Text style={styles.brandText}>ClimateControl</Text>
         </View>
-        <TouchableOpacity
-          style={styles.bellBtn}
-          onPress={() => navigation.getParent()?.navigate("ActivityLogStack")}
-        >
-          <Ionicons
-            name="notifications-outline"
-            size={20}
-            color={theme.colors.text}
-          />
-        </TouchableOpacity>
       </View>
 
       <FlatList
@@ -756,7 +794,11 @@ const DashboardScreen = () => {
                   onPress={handleLoadMore}
                 >
                   <Text style={styles.moreBtnText}>Xem thêm</Text>
-                  <Ionicons name="chevron-down" size={14} color={theme.colors.onSecondary} />
+                  <Ionicons
+                    name="chevron-down"
+                    size={14}
+                    color={theme.colors.onSecondary}
+                  />
                 </TouchableOpacity>
               </View>
             )}
@@ -776,4 +818,3 @@ export default DashboardScreen;
 function useAuth() {
   throw new Error("Function not implemented.");
 }
-

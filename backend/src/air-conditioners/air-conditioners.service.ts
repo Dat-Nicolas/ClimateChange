@@ -21,20 +21,20 @@ export class AirConditionersService {
   ) {}
 
   async findByRoomId(roomId: string) {
-  return this.prisma.airConditioner.findFirst({
-    where: {
-      roomId,
-    },
-    include: {
-      brand: {
-        include: {
-          irButtons: true,
-        },
+    return this.prisma.airConditioner.findFirst({
+      where: {
+        roomId,
       },
-      room: true,
-    },
-  });
-}
+      include: {
+        brand: {
+          include: {
+            irButtons: true,
+          },
+        },
+        room: true,
+      },
+    });
+  }
   // ====================== VALIDATION ======================
   private async validateAcAccess(acId: string, userId: string, role: string) {
     const ac = await this.prisma.airConditioner.findUnique({
@@ -107,10 +107,16 @@ export class AirConditionersService {
     return ac;
   }
 
-  async update(id: string, data: any, ) {
+  async update(id: string, data: any) {
     const updated = await this.prisma.airConditioner.update({
       where: { id },
-      data,
+      data: {
+        ...(data.temperature !== undefined && {
+          currentTemp: data.temperature,
+        }),
+        ...(data.status && { status: data.status }),
+        ...(data.mode && { mode: data.mode }),
+      },
       include: { brand: true, room: true },
     });
 

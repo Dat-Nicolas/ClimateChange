@@ -12,7 +12,7 @@ interface BottomNavBarProps {
 }
 
 const tabs: Array<{ key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
-  { key: 'DashboardStack', label: 'Dashboard', icon: 'grid-outline' },
+  { key: 'DashboardStack', label: 'Bảng điều khiển', icon: 'grid-outline' },
   { key: 'Schedules', label: 'Đặt lịch', icon: 'calendar-outline' },
   { key: 'ActivityLogStack', label: 'Nhật ký', icon: 'document-text-outline' },
   { key: 'SettingsStack', label: 'Cài đặt', icon: 'settings-outline' },

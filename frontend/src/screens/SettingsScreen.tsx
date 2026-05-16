@@ -149,21 +149,21 @@ const SettingsScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Header title="Settings" />
+      <Header title="Cài đặt" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>General</Text>
+          <Text style={styles.sectionTitle}>Chung</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon="notifications-outline"
-              label="Push Notifications"
+              label="Thông báo"
               value={notifications}
               onToggle={setNotifications}
             />
             <View style={styles.divider} />
             <SettingItem
               icon="moon-outline"
-              label="Dark Mode"
+              label="Chế độ tối"
               value={themeMode === 'dark'}
               onToggle={(v) => setThemeMode(v ? 'dark' : 'light')}
             />
@@ -171,37 +171,30 @@ const SettingsScreen = () => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Automation</Text>
+          <Text style={styles.sectionTitle}>Tự động hóa</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon="flash-outline"
-              label="Eco-Mode Automation"
+              label="Tự động hóa chế độ Eco"
               value={autoControl}
               onToggle={setAutoControl}
-            />
-            <View style={styles.divider} />
-            <SettingItem
-              icon="time-outline"
-              label="Schedule Management"
-              type="link"
-              onPress={() => navigation.getParent()?.navigate('Schedules')}
             />
           </View>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
+          <Text style={styles.sectionTitle}>Tài khoản</Text>
           <View style={styles.sectionContent}>
             <SettingItem
               icon="person-outline"
-              label="Profile Information"
+              label="Thông tin hồ sơ"
               type="link"
               onPress={() => navigation.navigate('ProfileInformation')}
             />
             <View style={styles.divider} />
             <SettingItem
               icon="lock-closed-outline"
-              label="Security & Password"
+              label="Bảo mật & Mật khẩu"
               type="link"
               onPress={() => navigation.navigate('SecurityPassword')}
             />
@@ -219,10 +212,10 @@ const SettingsScreen = () => {
             size={22}
             color={theme.colors.tertiary}
           />
-          <Text style={styles.logoutText}>Logout</Text>
+          <Text style={styles.logoutText}>Đăng xuất</Text>
         </TouchableOpacity>
 
-        <Text style={styles.versionText}>Version 1.0.0 (Production)</Text>
+        <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
       </ScrollView>
     </View>
   );

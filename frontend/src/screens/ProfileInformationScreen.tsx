@@ -154,7 +154,7 @@ const ProfileInformationScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Header showBack title="Profile Information" />
+      <Header showBack title="Thông tin hồ sơ" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {isLoading ? (
           <View style={styles.loadingWrap}>
@@ -201,7 +201,7 @@ const ProfileInformationScreen = () => {
                   activeOpacity={0.85}
                 >
                   <Ionicons name="create-outline" size={18} color={theme.colors.onPrimary} />
-                  <Text style={styles.actionButtonText}>Edit</Text>
+                  <Text style={styles.actionButtonText}>Chỉnh sửa</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -212,7 +212,7 @@ const ProfileInformationScreen = () => {
                   activeOpacity={0.85}
                 >
                   <Ionicons name="shield-checkmark-outline" size={18} color={theme.colors.text} />
-                  <Text style={styles.secondaryActionText}>Security</Text>
+                  <Text style={styles.secondaryActionText}>Bảo mật</Text>
                 </TouchableOpacity>
               </View>
             </View>
