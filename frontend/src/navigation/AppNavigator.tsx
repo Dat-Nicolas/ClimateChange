@@ -16,7 +16,9 @@ export type RootStackParamList = {
   DashboardStack: undefined;
   ActivityLogStack: undefined;
   SettingsStack: undefined;
-  RoomDetail: { roomId: string; roomName: string };
+  ProfileInformation: undefined;
+  SecurityPassword: undefined;
+  RoomDetail: { roomId: string; roomName: string; userId?: string };
   ActivityLogDetail: { id: string };
   Schedules: undefined;
 };

@@ -9,12 +9,12 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
-import { theme } from "../theme";
 import Header from "../components/common/Header";
 import { Ionicons } from "@expo/vector-icons";
 import { logService } from "../services/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
+import { useTheme } from "../theme/ThemeProvider";
 
 interface LogItem {
   id?: string;
@@ -26,6 +26,93 @@ interface LogItem {
 
 const ActivityLogScreen = () => {
   const navigation = useNavigation<any>();
+  const { theme } = useTheme();
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+        loadingContainer: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        },
+        emptyContainer: {
+          alignItems: "center",
+          marginTop: 40,
+          paddingHorizontal: 20,
+        },
+        emptyText: {
+          ...theme.typography.bodyLg,
+          color: theme.colors.textSecondary,
+        },
+        errorText: {
+          ...theme.typography.bodyMd,
+          color: theme.colors.error,
+          textAlign: "center",
+          marginTop: 12,
+        },
+        retryButton: {
+          marginTop: 16,
+          paddingHorizontal: 20,
+          paddingVertical: 8,
+          backgroundColor: theme.colors.primary,
+          borderRadius: 8,
+        },
+        retryText: {
+          color: theme.colors.onPrimary,
+          fontWeight: "600",
+        },
+        listContent: {
+          padding: theme.spacing.md,
+          paddingBottom: 80,
+        },
+        list: {
+          flex: 1,
+        },
+        logItem: {
+          flexDirection: "row",
+          paddingVertical: theme.spacing.md,
+        },
+        logIcon: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: theme.colors.surfaceVariant,
+          justifyContent: "center",
+          alignItems: "center",
+          marginRight: theme.spacing.md,
+        },
+        logContent: {
+          flex: 1,
+        },
+        logAction: {
+          ...theme.typography.bodyMd,
+          fontWeight: "600",
+          color: theme.colors.text,
+        },
+        logMeta: {
+          ...theme.typography.bodySm,
+          color: theme.colors.textSecondary,
+          marginTop: 2,
+        },
+        logTime: {
+          ...theme.typography.bodySm,
+          color: theme.colors.textSecondary,
+          marginTop: 4,
+          fontSize: 11,
+        },
+        separator: {
+          height: 1,
+          backgroundColor: theme.colors.outlineVariant,
+          marginLeft: 56,
+        },
+      }),
+    [theme]
+  );
 
   const [logs, setLogs] = useState<LogItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -114,7 +201,7 @@ const ActivityLogScreen = () => {
         </View>
       </TouchableOpacity>
     ),
-    [getIconName, getFormattedTime, handlePress]
+    [getIconName, getFormattedTime, handlePress, styles, theme.colors.primary]
   );
 
   const keyExtractor = useCallback((item: LogItem, index: number) => {
@@ -145,7 +232,7 @@ const ActivityLogScreen = () => {
         )}
       </View>
     ),
-    [error, fetchLogs]
+    [error, fetchLogs, styles, theme.colors.error]
   );
 
   if (isLoading) {
@@ -184,87 +271,5 @@ const ActivityLogScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-  },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  emptyContainer: {
-    alignItems: "center",
-    marginTop: 40,
-    paddingHorizontal: 20,
-  },
-  emptyText: {
-    ...theme.typography.bodyLg,
-    color: theme.colors.textSecondary,
-  },
-  errorText: {
-    ...theme.typography.bodyMd,
-    color: theme.colors.error,
-    textAlign: "center",
-    marginTop: 12,
-  },
-  retryButton: {
-    marginTop: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
-    backgroundColor: theme.colors.primary,
-    borderRadius: 8,
-  },
-  retryText: {
-    color: theme.colors.surface,
-    fontWeight: "600",
-  },
-  listContent: {
-    padding: theme.spacing.md,
-    paddingBottom: 80,
-  },
-  list: {
-    flex: 1,
-  },
-  logItem: {
-    flexDirection: "row",
-    paddingVertical: theme.spacing.md,
-  },
-  logIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: theme.colors.surfaceVariant,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: theme.spacing.md,
-  },
-  logContent: {
-    flex: 1,
-  },
-  logAction: {
-    ...theme.typography.bodyMd,
-    fontWeight: "600",
-    color: theme.colors.text,
-  },
-  logMeta: {
-    ...theme.typography.bodySm,
-    color: theme.colors.textSecondary,
-    marginTop: 2,
-  },
-  logTime: {
-    ...theme.typography.bodySm,
-    color: theme.colors.outline,
-    marginTop: 4,
-    fontSize: 11,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: theme.colors.outlineVariant,
-    marginLeft: 56,
-  },
-});
 
 export default ActivityLogScreen;

@@ -13,15 +13,17 @@ export const colorsLight = {
   surfaceVariant: '#D3E4FE',
 
   text: '#0B1C30',
-  textSecondary: '#424754',
+  // Bị nhạt trên light mode -> làm đậm hơn để dễ đọc
+  textSecondary: '#2F3642',
   textInverse: '#FFFFFF',
 
-  outline: '#727785',
+  // Viền/placeholder text nhạt -> làm đậm hơn
+  outline: '#5B6578',
   outlineVariant: '#C2C6D6',
 
   onPrimary: '#FFFFFF',
   onSecondary: '#FFFFFF',
-  onTertiary: '#FFFFFF',
+  onTertiary: '#ffffff80',
 
   // States
   disabled: '#E0E3E5',

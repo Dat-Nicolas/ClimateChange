@@ -8,7 +8,10 @@ import RoomDetailScreen from "../screens/RoomDetailScreen";
 import ActivityLogScreen from "../screens/ActivityLogScreen";
 import SettingsScreen from "../screens/SettingsScreen";
 import SchedulesScreen from "../screens/SchedulesScreen";
+
 import ActivityLogDetailScreen from "../screens/ActivityLogDetailScreen";
+import ProfileInformationScreen from "../screens/ProfileInformationScreen";
+import SecurityPasswordScreen from "../screens/SecurityPasswordScreen";
 
 // Import component BottomNavBar custom của bạn
 import BottomNavBar, { TabKey } from "../components/common/BottomNavBar"; 
@@ -17,7 +20,9 @@ export type MainStackParamList = {
   DashboardStack: undefined;
   ActivityLogStack: undefined;
   SettingsStack: undefined;
-  RoomDetail: { roomId: string; roomName: string };
+  ProfileInformation: undefined;
+  SecurityPassword: undefined;
+  RoomDetail: { roomId: string; roomName: string; userId?: string };
   ActivityLogDetail: { id: string };
   Schedules: undefined;
 };
@@ -51,6 +56,14 @@ function SettingsStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="SettingsStack" component={SettingsScreen} />
+      <Stack.Screen
+        name="ProfileInformation"
+        component={ProfileInformationScreen}
+      />
+      <Stack.Screen
+        name="SecurityPassword"
+        component={SecurityPasswordScreen}
+      />
     </Stack.Navigator>
   );
 }

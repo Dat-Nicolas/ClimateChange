@@ -12,6 +12,7 @@ import { BrandsModule } from './brands/brands.module';
 import { SchedulesModule } from './schedules/schedules.module';
 import { AcModule } from './mqtt/ac/ac.module';
 import { IrButtonsModule } from './ir-buttons/ir-buttons.module';
+import { WeatherModule } from './weather/weather.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { IrButtonsModule } from './ir-buttons/ir-buttons.module';
     SchedulesModule,
     AcModule,
     IrButtonsModule,
+    WeatherModule
   ],
   controllers: [AppController],
   providers: [AppService, PrismaService],

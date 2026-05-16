@@ -8,7 +8,7 @@ import {
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import { logService } from "../services/api";
-import { theme } from "../theme";
+import { useTheme } from "../theme/ThemeProvider";
 import { format } from "date-fns";
 import { vi } from "date-fns/locale";
 import Header from "../components/common/Header";
@@ -32,6 +32,62 @@ const ActivityLogDetailScreen = () => {
   const route = useRoute<any>();
   const navigation = useNavigation<ActivityLogDetailNavigationProp>();
   const { id } = route.params;
+  const { theme } = useTheme();
+
+  const styles = React.useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+          padding: 12,
+        },
+
+        center: {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        },
+
+        emptyText: {
+          fontSize: 14,
+          color: theme.colors.textSecondary,
+        },
+
+        card: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: 12,
+          padding: 14,
+          marginBottom: 12,
+          elevation: 2,
+        },
+
+        sectionTitle: {
+          fontSize: 14,
+          fontWeight: "700",
+          color: theme.colors.primary,
+          marginBottom: 8,
+        },
+
+        action: {
+          fontSize: 18,
+          fontWeight: "bold",
+          color: theme.colors.text,
+        },
+
+        item: {
+          fontSize: 14,
+          color: theme.colors.text,
+          marginBottom: 4,
+        },
+
+        subItem: {
+          fontSize: 12,
+          color: theme.colors.textSecondary,
+        },
+      }),
+    [theme]
+  );
 
   const [log, setLog] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -67,7 +123,7 @@ const ActivityLogDetailScreen = () => {
           onBackPress={() => navigation.goBack()}
         />
         <View style={styles.center}>
-          <Text>Không có dữ liệu</Text>
+          <Text style={styles.emptyText}>Không có dữ liệu</Text>
         </View>
       </View>
     );
@@ -145,50 +201,5 @@ const ActivityLogDetailScreen = () => {
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
-    padding: 12,
-  },
-
-  center: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-
-  card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 12,
-    elevation: 2,
-  },
-
-  sectionTitle: {
-    fontSize: 14,
-    fontWeight: "700",
-    color: theme.colors.primary,
-    marginBottom: 8,
-  },
-
-  action: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: theme.colors.text,
-  },
-
-  item: {
-    fontSize: 14,
-    color: theme.colors.text,
-    marginBottom: 4,
-  },
-
-  subItem: {
-    fontSize: 12,
-    color: theme.colors.textSecondary,
-  },
-});
 
 export default ActivityLogDetailScreen;

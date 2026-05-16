@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+﻿import React, { useCallback } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ export type TabKey = 'DashboardStack' | 'Schedules' | 'ActivityLogStack' | 'Sett
 
 interface BottomNavBarProps {
   activeTab: TabKey;
-  navigation: any; // Nhận prop navigation từ Tab.Navigator truyền xuống
+  navigation: any;
 }
 
 const tabs: Array<{ key: TabKey; label: string; icon: keyof typeof Ionicons.glyphMap }> = [
@@ -25,11 +25,10 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, navigation }) =>
   const handleNavigation = useCallback(
     (tabKey: TabKey) => {
       if (tabKey !== activeTab) {
-        // Sử dụng router chuẩn của Tab Navigation, đảm bảo không bị trắng màn hình
         navigation.navigate(tabKey);
       }
     },
-    [navigation, activeTab]
+    [navigation, activeTab],
   );
 
   return (
@@ -56,11 +55,13 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, navigation }) =>
                 isActive && {
                   backgroundColor:
                     theme.colors.background === '#F8F9FF'
-                      ? 'rgba(16, 185, 129, 0.14)'
-                      : 'rgba(16, 185, 129, 0.22)',
+                      ? 'rgba(16, 185, 129, 0.20)'
+                      : 'rgba(16, 185, 129, 0.30)',
+                  borderWidth: 1,
+                  borderColor: 'rgba(16, 185, 129, 0.55)',
                 },
               ]}
-              activeOpacity={0.7}
+              activeOpacity={0.85}
               onPress={() => handleNavigation(tab.key)}
               accessibilityLabel={`Đi đến ${tab.label}`}
               accessibilityRole="button"
@@ -69,14 +70,14 @@ const BottomNavBar: React.FC<BottomNavBarProps> = ({ activeTab, navigation }) =>
               <Ionicons
                 name={tab.icon}
                 size={22}
-                color={isActive ? theme.colors.primary : theme.colors.textSecondary}
+                color={isActive ? theme.colors.success : theme.colors.textSecondary}
               />
               <Text
                 style={[
                   styles.tabLabel,
                   {
-                    color: isActive ? theme.colors.primary : theme.colors.textSecondary,
-                    fontWeight: isActive ? '700' : '500',
+                    color: isActive ? theme.colors.text : theme.colors.textSecondary,
+                    fontWeight: isActive ? '800' : '600',
                   },
                 ]}
               >
@@ -115,7 +116,7 @@ const styles = StyleSheet.create({
   },
   tabLabel: {
     fontSize: 11,
-    fontWeight: '500',
+    fontWeight: '600',
   },
 });
 

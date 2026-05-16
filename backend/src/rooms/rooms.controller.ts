@@ -16,7 +16,7 @@ import { SendIRButtonDto } from './dto/send-ir-button.dto';
 @ApiTags('Rooms')
 @ApiBearerAuth()
 @Controller('rooms')
-// @UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard)
 export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
@@ -24,7 +24,7 @@ export class RoomsController {
   @Get()
   @ApiOperation({ summary: 'Lấy danh sách tất cả phòng' })
   findAll(@Request() req) {
-    return this.roomsService.findAll();
+    return this.roomsService.findAll(req.user.userId, req.user.role);
   }
 
   @Get(':id')

@@ -71,7 +71,16 @@ const api = {
 
 export const roomService = {
   getRooms: () => api.get("/rooms"),
-  getRoomDetail: (id: string) => api.get(`/rooms/${id}`),
+  getRoomDetail: (roomId: string, roomName?: string, userId?: string) => {
+    const safeRoomName = roomName ?? "";
+    const safeUserId = userId ?? "";
+    const queryParts = [
+      `roomId=${encodeURIComponent(roomId)}`,
+      `roomName=${encodeURIComponent(safeRoomName)}`,
+      `userId=${encodeURIComponent(safeUserId)}`,
+    ];
+    return api.get(`/rooms/${roomId}?${queryParts.join("&")}`);
+  },
 };
 
 export const acService = {
@@ -96,6 +105,10 @@ export const authService = {
     ]);
     DeviceEventEmitter.emit("auth:logout");
   },
+};
+
+export const weatherService = {
+  getCurrentWeather: () => api.get("/weather"),
 };
 
 export default api;

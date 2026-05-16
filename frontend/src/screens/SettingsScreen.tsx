@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -7,15 +7,15 @@ import {
   Switch,
   TouchableOpacity,
 } from 'react-native';
-import { theme as lightTheme, useTheme } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 import Header from '../components/common/Header';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { MainStackParamList } from '../navigation/MainTabs';
 import { authService } from '../services/api';
 
-type NavigationProp = StackNavigationProp<RootStackParamList, 'SettingsStack'>;
+type NavigationProp = StackNavigationProp<MainStackParamList, 'SettingsStack'>;
 
 const SettingsScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -23,6 +23,82 @@ const SettingsScreen = () => {
 
   const [notifications, setNotifications] = useState(true);
   const [autoControl, setAutoControl] = useState(true);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        container: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+        scrollContent: {
+          padding: theme.spacing.md,
+          paddingBottom: 20,
+        },
+        scroll: {
+          flex: 1,
+        },
+        section: {
+          marginBottom: theme.spacing.lg,
+        },
+        sectionTitle: {
+          ...theme.typography.labelCaps,
+          color: theme.colors.textSecondary,
+          marginBottom: theme.spacing.sm,
+          marginLeft: theme.spacing.xs,
+        },
+        sectionContent: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.roundness.md,
+          ...theme.shadows.level1,
+          overflow: 'hidden',
+        },
+        settingItem: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: theme.spacing.md,
+        },
+        settingLeft: {
+          flexDirection: 'row',
+          alignItems: 'center',
+        },
+        settingLabel: {
+          ...theme.typography.bodyMd,
+          color: theme.colors.text,
+          marginLeft: theme.spacing.md,
+        },
+        divider: {
+          height: 1,
+          backgroundColor: theme.colors.outlineVariant,
+          marginLeft: theme.spacing.xxl,
+        },
+        logoutButton: {
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.surface,
+          padding: theme.spacing.md,
+          borderRadius: theme.roundness.md,
+          marginTop: theme.spacing.lg,
+          ...theme.shadows.level1,
+        },
+        logoutText: {
+          ...theme.typography.bodyMd,
+          color: theme.colors.tertiary,
+          fontWeight: '600',
+          marginLeft: theme.spacing.sm,
+        },
+        versionText: {
+          ...theme.typography.bodySm,
+          color: theme.colors.outline,
+          textAlign: 'center',
+          marginTop: theme.spacing.xl,
+          marginBottom: theme.spacing.xl,
+        },
+      }),
+    [theme],
+  );
 
   const SettingItem = ({
     icon,
@@ -45,17 +121,28 @@ const SettingsScreen = () => {
       disabled={type === 'switch' && !onPress}
     >
       <View style={styles.settingLeft}>
-        <Ionicons name={icon as any} size={22} color={theme.colors.primary} />
+        <Ionicons
+          name={icon as any}
+          size={22}
+          color={theme.colors.primary}
+        />
         <Text style={styles.settingLabel}>{label}</Text>
       </View>
       {type === 'switch' ? (
         <Switch
           value={value}
           onValueChange={(v) => onToggle?.(v)}
-          trackColor={{ false: theme.colors.outlineVariant, true: theme.colors.primary }}
+          trackColor={{
+            false: theme.colors.outlineVariant,
+            true: theme.colors.primary,
+          }}
         />
       ) : (
-        <Ionicons name="chevron-forward" size={20} color={theme.colors.outline} />
+        <Ionicons
+          name="chevron-forward"
+          size={20}
+          color={theme.colors.outline}
+        />
       )}
     </TouchableOpacity>
   );
@@ -97,9 +184,7 @@ const SettingsScreen = () => {
               icon="time-outline"
               label="Schedule Management"
               type="link"
-              onPress={() =>
-                navigation.getParent()?.navigate('Schedules')
-              }
+              onPress={() => navigation.getParent()?.navigate('Schedules')}
             />
           </View>
         </View>
@@ -107,9 +192,19 @@ const SettingsScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           <View style={styles.sectionContent}>
-            <SettingItem icon="person-outline" label="Profile Information" type="link" />
+            <SettingItem
+              icon="person-outline"
+              label="Profile Information"
+              type="link"
+              onPress={() => navigation.navigate('ProfileInformation')}
+            />
             <View style={styles.divider} />
-            <SettingItem icon="lock-closed-outline" label="Security & Password" type="link" />
+            <SettingItem
+              icon="lock-closed-outline"
+              label="Security & Password"
+              type="link"
+              onPress={() => navigation.navigate('SecurityPassword')}
+            />
           </View>
         </View>
 
@@ -119,7 +214,11 @@ const SettingsScreen = () => {
             await authService.logout();
           }}
         >
-          <Ionicons name="log-out-outline" size={22} color={theme.colors.tertiary} />
+          <Ionicons
+            name="log-out-outline"
+            size={22}
+            color={theme.colors.tertiary}
+          />
           <Text style={styles.logoutText}>Logout</Text>
         </TouchableOpacity>
 
@@ -128,77 +227,5 @@ const SettingsScreen = () => {
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: lightTheme.colors.background,
-  },
-  scrollContent: {
-    padding: lightTheme.spacing.md,
-    paddingBottom: 20,
-  },
-  scroll: {
-    flex: 1,
-  },
-  section: {
-    marginBottom: lightTheme.spacing.lg,
-  },
-  sectionTitle: {
-    ...lightTheme.typography.labelCaps,
-    color: lightTheme.colors.textSecondary,
-    marginBottom: lightTheme.spacing.sm,
-    marginLeft: lightTheme.spacing.xs,
-  },
-  sectionContent: {
-    backgroundColor: lightTheme.colors.surface,
-    borderRadius: lightTheme.roundness.md,
-    ...lightTheme.shadows.level1,
-    overflow: 'hidden',
-  },
-  settingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: lightTheme.spacing.md,
-  },
-  settingLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  settingLabel: {
-    ...lightTheme.typography.bodyMd,
-    color: lightTheme.colors.text,
-    marginLeft: lightTheme.spacing.md,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: lightTheme.colors.outlineVariant,
-    marginLeft: lightTheme.spacing.xxl,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: lightTheme.colors.surface,
-    padding: lightTheme.spacing.md,
-    borderRadius: lightTheme.roundness.md,
-    marginTop: lightTheme.spacing.lg,
-    ...lightTheme.shadows.level1,
-  },
-  logoutText: {
-    ...lightTheme.typography.bodyMd,
-    color: lightTheme.colors.tertiary,
-    fontWeight: '600',
-    marginLeft: lightTheme.spacing.sm,
-  },
-  versionText: {
-    ...lightTheme.typography.bodySm,
-    color: lightTheme.colors.outline,
-    textAlign: 'center',
-    marginTop: lightTheme.spacing.xl,
-    marginBottom: lightTheme.spacing.xl,
-  },
-});
 
 export default SettingsScreen;

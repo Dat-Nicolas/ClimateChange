@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,9 +11,12 @@ import {
   Modal,
   Switch,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { theme } from '../theme';
+import { useTheme } from '../theme/ThemeProvider';
 import Header from '../components/common/Header';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -26,10 +29,9 @@ type Schedule = {
   isActive: boolean;
 };
 
-const API_URL =
-  process.env.EXPO_PUBLIC_BASE_URL ?? 'http://192.168.1.10:3000';
+const API_URL = process.env.EXPO_PUBLIC_BASE_URL ?? 'http://192.168.1.10:3000';
 
-const emptyForm = {
+const emptyForm: Omit<Schedule, 'id'> = {
   roomId: '',
   dayOfWeek: 'MONDAY',
   startTime: '',
@@ -37,7 +39,11 @@ const emptyForm = {
   isActive: true,
 };
 
+type FormState = Omit<Schedule, 'id'>;
+
 const SchedulesScreen = () => {
+  const { theme } = useTheme();
+
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -45,7 +51,123 @@ const SchedulesScreen = () => {
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
-  const [form, setForm] = useState<any>(emptyForm);
+  const [form, setForm] = useState<FormState>(emptyForm);
+
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        center: {
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          backgroundColor: theme.colors.background,
+        },
+
+        list: {
+          flex: 1,
+          backgroundColor: theme.colors.background,
+        },
+
+        card: {
+          marginHorizontal: 12,
+          marginVertical: 8,
+          borderRadius: theme.roundness.md,
+          backgroundColor: theme.colors.surface,
+          elevation: 2,
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+          padding: theme.spacing.md,
+        },
+
+        row: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        },
+
+        time: {
+          fontSize: 16,
+          fontWeight: '700',
+          color: theme.colors.text,
+        },
+
+        text: {
+          marginTop: 6,
+          color: theme.colors.text,
+          fontWeight: '600',
+        },
+
+        textSmall: {
+          marginTop: 2,
+          color: theme.colors.textSecondary,
+          fontSize: 12,
+        },
+
+        actions: {
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          marginTop: 12,
+          gap: 10,
+        },
+
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: theme.colors.overlay,
+          justifyContent: 'center',
+          paddingHorizontal: 16,
+        },
+
+        modal: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.roundness.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+          padding: 16,
+        },
+
+        input: {
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+          marginBottom: 10,
+          padding: 12,
+          borderRadius: 10,
+          color: theme.colors.text,
+          backgroundColor: theme.colors.background,
+        },
+
+        btn: {
+          backgroundColor: theme.colors.primary,
+          padding: 12,
+          alignItems: 'center',
+          borderRadius: 10,
+          marginTop: 4,
+        },
+
+        btnText: {
+          color: theme.colors.surface,
+          fontWeight: '800',
+        },
+
+        cancelText: {
+          marginTop: 12,
+          textAlign: 'center',
+          color: theme.colors.textSecondary,
+          fontWeight: '700',
+        },
+
+        headerRightBtn: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: 'center',
+          justifyContent: 'center',
+          borderWidth: 1,
+          borderColor: theme.colors.outlineVariant,
+          backgroundColor: theme.colors.surface,
+        },
+      }),
+    [theme],
+  );
 
   // ================= FETCH =================
   const fetchSchedules = async () => {
@@ -63,9 +185,10 @@ const SchedulesScreen = () => {
       });
 
       const data = await res.json();
-      setSchedules(data);
+      setSchedules(Array.isArray(data) ? data : []);
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message ?? 'Failed to load schedules');
+      setSchedules([]);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -83,6 +206,8 @@ const SchedulesScreen = () => {
 
   // ================= CREATE / UPDATE =================
   const submitSchedule = async () => {
+    const payload: FormState = form;
+
     try {
       const token = await AsyncStorage.getItem('user_token');
 
@@ -98,20 +223,15 @@ const SchedulesScreen = () => {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error('Save failed');
 
       const saved = await res.json();
 
-      // update local state (NO reload)
       if (editId) {
-        setSchedules((prev) =>
-          prev.map((item) =>
-            item.id === editId ? saved : item
-          )
-        );
+        setSchedules((prev) => prev.map((item) => (item.id === editId ? saved : item)));
       } else {
         setSchedules((prev) => [saved, ...prev]);
       }
@@ -138,35 +258,35 @@ const SchedulesScreen = () => {
             try {
               const token = await AsyncStorage.getItem('user_token');
 
-              const res = await fetch(
-                `${API_URL}/schedules/${id}`,
-                {
-                  method: 'DELETE',
-                  headers: {
-                    Authorization: `Bearer ${token}`,
-                  },
-                }
-              );
+              const res = await fetch(`${API_URL}/schedules/${id}`, {
+                method: 'DELETE',
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
 
               if (!res.ok) throw new Error('Delete failed');
 
-              // ONLY update local state
-              setSchedules((prev) =>
-                prev.filter((i) => i.id !== id)
-              );
+              setSchedules((prev) => prev.filter((i) => i.id !== id));
             } catch (err) {
               console.log(err);
             }
           },
         },
-      ]
+      ],
     );
   };
 
   // ================= EDIT =================
   const onEdit = (item: Schedule) => {
     setEditId(item.id);
-    setForm(item);
+    setForm({
+      roomId: item.roomId,
+      dayOfWeek: item.dayOfWeek,
+      startTime: item.startTime,
+      endTime: item.endTime,
+      isActive: item.isActive,
+    });
     setModalVisible(true);
   };
 
@@ -184,12 +304,7 @@ const SchedulesScreen = () => {
         body: JSON.stringify({ isActive: val }),
       });
 
-      // local update (NO reload)
-      setSchedules((prev) =>
-        prev.map((s) =>
-          s.id === item.id ? { ...s, isActive: val } : s
-        )
-      );
+      setSchedules((prev) => prev.map((s) => (s.id === item.id ? { ...s, isActive: val } : s)));
     } catch (err) {
       console.log(err);
     }
@@ -206,48 +321,48 @@ const SchedulesScreen = () => {
         <Switch
           value={item.isActive}
           onValueChange={(val) => toggleActive(item, val)}
+          trackColor={{ false: theme.colors.outlineVariant, true: theme.colors.primary }}
+          thumbColor={item.isActive ? theme.colors.surface : theme.colors.surface}
         />
       </View>
 
       <Text style={styles.text}>{item.dayOfWeek}</Text>
-      <Text style={styles.textSmall}>
-        Room: {item.roomId.slice(0, 8)}...
-      </Text>
+      <Text style={styles.textSmall}>Room: {item.roomId.slice(0, 8)}...</Text>
 
       <View style={styles.actions}>
-        <TouchableOpacity onPress={() => onEdit(item)}>
-          <Ionicons name="create-outline" size={22} />
+        <TouchableOpacity onPress={() => onEdit(item)} accessibilityLabel="Edit schedule">
+          <Ionicons name="create-outline" size={22} color={theme.colors.primary} />
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={() => deleteSchedule(item.id)}>
-          <Ionicons name="trash-outline" size={22} color="red" />
+        <TouchableOpacity onPress={() => deleteSchedule(item.id)} accessibilityLabel="Delete schedule">
+          <Ionicons name="trash-outline" size={22} color={theme.colors.error} />
         </TouchableOpacity>
       </View>
     </View>
   );
 
-  // ================= UI =================
   if (loading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <Header
         title="Schedules"
         rightElement={
           <TouchableOpacity
+            style={styles.headerRightBtn}
             onPress={() => {
               setForm(emptyForm);
               setEditId(null);
               setModalVisible(true);
             }}
           >
-            <Ionicons name="add" size={28} />
+            <Ionicons name="add" size={28} color={theme.colors.text} />
           </TouchableOpacity>
         }
       />
@@ -256,132 +371,72 @@ const SchedulesScreen = () => {
         data={schedules}
         keyExtractor={(i) => i.id}
         renderItem={renderItem}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-          />
+        style={styles.list}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListEmptyComponent={
+          <View style={{ padding: 20, alignItems: 'center' }}>
+            {error ? <Text style={{ color: theme.colors.error, fontWeight: '700' }}>{error}</Text> : null}
+            <Text style={{ color: theme.colors.textSecondary, marginTop: 8, fontWeight: '600' }}>
+              No schedules
+            </Text>
+          </View>
         }
       />
 
-
       {/* ================= MODAL ================= */}
-      <Modal visible={modalVisible} animationType="slide">
-        <View style={styles.modal}>
-          <TextInput
-            placeholder="Room ID"
-            value={form.roomId}
-            onChangeText={(t) =>
-              setForm({ ...form, roomId: t })
-            }
-            style={styles.input}
-          />
+      <Modal visible={modalVisible} transparent animationType="slide">
+        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+          <Pressable style={styles.modalOverlay} onPress={() => setModalVisible(false)}>
+            <View style={styles.modal}>
+              <Text style={{ color: theme.colors.text, fontSize: 18, fontWeight: '900', marginBottom: 12 }}>
+                {editId ? 'Update schedule' : 'Create schedule'}
+              </Text>
 
-          <TextInput
-            placeholder="Day of week"
-            value={form.dayOfWeek}
-            onChangeText={(t) =>
-              setForm({ ...form, dayOfWeek: t })
-            }
-            style={styles.input}
-          />
+              <TextInput
+                placeholder="Room ID"
+                placeholderTextColor={theme.colors.outline}
+                value={form.roomId}
+                onChangeText={(t) => setForm((p) => ({ ...p, roomId: t }))}
+                style={styles.input}
+              />
 
-          <TextInput
-            placeholder="Start time"
-            value={form.startTime}
-            onChangeText={(t) =>
-              setForm({ ...form, startTime: t })
-            }
-            style={styles.input}
-          />
+              <TextInput
+                placeholder="Day of week"
+                placeholderTextColor={theme.colors.outline}
+                value={form.dayOfWeek}
+                onChangeText={(t) => setForm((p) => ({ ...p, dayOfWeek: t }))}
+                style={styles.input}
+              />
 
-          <TextInput
-            placeholder="End time"
-            value={form.endTime}
-            onChangeText={(t) =>
-              setForm({ ...form, endTime: t })
-            }
-            style={styles.input}
-          />
+              <TextInput
+                placeholder="Start time"
+                placeholderTextColor={theme.colors.outline}
+                value={form.startTime}
+                onChangeText={(t) => setForm((p) => ({ ...p, startTime: t }))}
+                style={styles.input}
+              />
 
-          <TouchableOpacity
-            style={styles.btn}
-            onPress={submitSchedule}
-          >
-            <Text style={{ color: '#fff' }}>
-              {editId ? 'Update' : 'Create'}
-            </Text>
-          </TouchableOpacity>
+              <TextInput
+                placeholder="End time"
+                placeholderTextColor={theme.colors.outline}
+                value={form.endTime}
+                onChangeText={(t) => setForm((p) => ({ ...p, endTime: t }))}
+                style={styles.input}
+              />
 
-          <TouchableOpacity
-            onPress={() => setModalVisible(false)}
-          >
-            <Text>Cancel</Text>
-          </TouchableOpacity>
-        </View>
+              <TouchableOpacity style={styles.btn} onPress={submitSchedule}>
+                <Text style={styles.btnText}>{editId ? 'Update' : 'Create'}</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   );
 };
 
 export default SchedulesScreen;
-
-const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  card: {
-    padding: 12,
-    margin: 10,
-    borderRadius: 10,
-    backgroundColor: '#fff',
-    elevation: 3,
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-
-  time: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-
-  text: {
-    marginTop: 4,
-  },
-
-  textSmall: {
-    color: '#666',
-  },
-
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 10,
-  },
-
-  modal: {
-    flex: 1,
-    padding: 20,
-    justifyContent: 'center',
-  },
-
-  input: {
-    borderWidth: 1,
-    marginBottom: 10,
-    padding: 10,
-    borderRadius: 8,
-  },
-
-  btn: {
-    backgroundColor: 'black',
-    padding: 12,
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-});
