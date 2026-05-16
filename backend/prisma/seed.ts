@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('🌱 Starting database seed...');
 
-  // Clear existing data
+  // Clear existing data (đúng thứ tự để tránh FK lỗi)
   await prisma.attendanceLog.deleteMany();
   await prisma.schedule.deleteMany();
   await prisma.activityLog.deleteMany();
@@ -48,31 +48,34 @@ async function main() {
 
   console.log('✅ Created users');
 
-  // Create brands
+  // ✅ FIX: thêm irProtocol + irConfig
   const daikinBrand = await prisma.brand.create({
     data: {
       name: 'Daikin',
-
+      irProtocol: 'NEC',
+      // irConfig: {},
     },
   });
 
   const lgBrand = await prisma.brand.create({
     data: {
       name: 'LG',
-
+      irProtocol: 'NEC',
+      // irConfig: {},
     },
   });
 
   const samsungBrand = await prisma.brand.create({
     data: {
       name: 'Samsung',
-
+      irProtocol: 'NEC',
+      // irConfig: {},
     },
   });
 
   console.log('✅ Created brands');
 
-  // Create rooms
+  // ✅ FIX: thêm minPeopleToTurnOn (nếu schema có)
   const room1 = await prisma.room.create({
     data: {
       name: 'a201',
@@ -80,6 +83,7 @@ async function main() {
       currentPeople: 15,
       currentTemperature: 24.5,
       peoplePerAC: 10,
+      minPeopleToTurnOn: 5,
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',
@@ -95,7 +99,7 @@ async function main() {
       currentPeople: 8,
       currentTemperature: 25.2,
       peoplePerAC: 10,
-
+      minPeopleToTurnOn: 5,
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',
@@ -111,6 +115,7 @@ async function main() {
       currentPeople: 12,
       currentTemperature: 23.8,
       peoplePerAC: 10,
+      minPeopleToTurnOn: 5,
       defaultTemp: 25,
       autoMode: true,
       startTime: '08:00',
@@ -121,178 +126,149 @@ async function main() {
 
   console.log('✅ Created rooms');
 
-  // Create air conditioners
-  const ac1 = await prisma.airConditioner.create({
-    data: {
-      name: 'AC Unit 1',
-      brandId: daikinBrand.id,
-      roomId: room1.id,
-      status: 'ON',
-      currentTemp: 24.5,
-      mode: 'COOL',
-    },
-  });
-
-  const ac2 = await prisma.airConditioner.create({
-    data: {
-      name: 'AC Unit 2',
-      brandId: lgBrand.id,
-      roomId: room1.id,
-      status: 'ON',
-      currentTemp: 24.5,
-      mode: 'COOL',
-    },
-  });
-
-  const ac3 = await prisma.airConditioner.create({
-    data: {
-      name: 'AC Unit 3',
-      brandId: samsungBrand.id,
-      roomId: room2.id,
-      status: 'OFF',
-      currentTemp: 25.2,
-      mode: 'AUTO',
-    },
-  });
-
-  const ac4 = await prisma.airConditioner.create({
-    data: {
-      name: 'AC Unit 4',
-      brandId: daikinBrand.id,
-      roomId: room3.id,
-      status: 'ON',
-      currentTemp: 23.8,
-      mode: 'DRY',
-    },
+  // Air conditioners
+  await prisma.airConditioner.createMany({
+    data: [
+      {
+        name: 'AC Unit 1',
+        brandId: daikinBrand.id,
+        roomId: room1.id,
+        status: 'ON',
+        currentTemp: 24.5,
+        mode: 'COOL',
+      },
+      {
+        name: 'AC Unit 2',
+        brandId: lgBrand.id,
+        roomId: room1.id,
+        status: 'ON',
+        currentTemp: 24.5,
+        mode: 'COOL',
+      },
+      {
+        name: 'AC Unit 3',
+        brandId: samsungBrand.id,
+        roomId: room2.id,
+        status: 'OFF',
+        currentTemp: 25.2,
+        mode: 'AUTO',
+      },
+      {
+        name: 'AC Unit 4',
+        brandId: daikinBrand.id,
+        roomId: room3.id,
+        status: 'ON',
+        currentTemp: 23.8,
+        mode: 'DRY',
+      },
+    ],
   });
 
   console.log('✅ Created air conditioners');
 
-  // Create sensor logs
+  // Sensor logs
   const now = new Date();
   for (let i = 0; i < 10; i++) {
-    await prisma.sensorLog.create({
-      data: {
-        roomId: room1.id,
-        peopleCount: Math.floor(Math.random() * 20),
-        temperature: 24 + Math.random() * 2,
-        timestamp: new Date(now.getTime() - i * 60000),
-      },
-    });
-
-    await prisma.sensorLog.create({
-      data: {
-        roomId: room2.id,
-        peopleCount: Math.floor(Math.random() * 15),
-        temperature: 25 + Math.random() * 2,
-        timestamp: new Date(now.getTime() - i * 60000),
-      },
+    await prisma.sensorLog.createMany({
+      data: [
+        {
+          roomId: room1.id,
+          peopleCount: Math.floor(Math.random() * 20),
+          temperature: 24 + Math.random() * 2,
+          timestamp: new Date(now.getTime() - i * 60000),
+        },
+        {
+          roomId: room2.id,
+          peopleCount: Math.floor(Math.random() * 15),
+          temperature: 25 + Math.random() * 2,
+          timestamp: new Date(now.getTime() - i * 60000),
+        },
+      ],
     });
   }
 
   console.log('✅ Created sensor logs');
 
-  // Create activity logs
-  await prisma.activityLog.create({
-    data: {
-      roomId: room1.id,
-      userId: user1.id,
-      action: 'AC_TURNED_ON',
-      details: {
-        mode: 'COOL',
-        temperature: 25,
+  // Activity logs
+  await prisma.activityLog.createMany({
+    data: [
+      {
+        roomId: room1.id,
+        userId: user1.id,
+        action: 'AC_TURNED_ON',
+        details: { mode: 'COOL', temperature: 25 },
+        timestamp: new Date(now.getTime() - 3600000),
       },
-      timestamp: new Date(now.getTime() - 3600000),
-    },
-  });
-
-  await prisma.activityLog.create({
-    data: {
-      roomId: room1.id,
-      userId: user1.id,
-      action: 'TEMPERATURE_ADJUSTED',
-      details: {
-        from: 24,
-        to: 25,
+      {
+        roomId: room1.id,
+        userId: user1.id,
+        action: 'TEMPERATURE_ADJUSTED',
+        details: { from: 24, to: 25 },
+        timestamp: new Date(now.getTime() - 1800000),
       },
-      timestamp: new Date(now.getTime() - 1800000),
-    },
-  });
-
-  await prisma.activityLog.create({
-    data: {
-      roomId: room2.id,
-      userId: user1.id,
-      action: 'MODE_CHANGED',
-      details: {
-        from: 'COOL',
-        to: 'AUTO',
+      {
+        roomId: room2.id,
+        userId: user1.id,
+        action: 'MODE_CHANGED',
+        details: { from: 'COOL', to: 'AUTO' },
       },
-    },
+    ],
   });
 
   console.log('✅ Created activity logs');
 
-  // Create schedules
+  // Schedules
   const daysOfWeek = [
-    'MONDAY',
-    'TUESDAY',
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
+    'MONDAY','TUESDAY','WEDNESDAY',
+    'THURSDAY','FRIDAY','SATURDAY','SUNDAY',
   ];
 
   for (const day of daysOfWeek) {
-    await prisma.schedule.create({
-      data: {
-        roomId: room1.id,
-        dayOfWeek: day as any,
-        startTime: '08:00',
-        endTime: '18:00',
-        isActive: day !== 'SATURDAY' && day !== 'SUNDAY',
-      },
-    });
-
-    await prisma.schedule.create({
-      data: {
-        roomId: room2.id,
-        dayOfWeek: day as any,
-        startTime: '07:00',
-        endTime: '19:00',
-        isActive: day !== 'SUNDAY',
-      },
+    await prisma.schedule.createMany({
+      data: [
+        {
+          roomId: room1.id,
+          dayOfWeek: day as any,
+          startTime: '08:00',
+          endTime: '18:00',
+          isActive: day !== 'SATURDAY' && day !== 'SUNDAY',
+        },
+        {
+          roomId: room2.id,
+          dayOfWeek: day as any,
+          startTime: '07:00',
+          endTime: '19:00',
+          isActive: day !== 'SUNDAY',
+        },
+      ],
     });
   }
 
   console.log('✅ Created schedules');
 
-  // Create attendance logs
+  // Attendance logs
   for (let i = 0; i < 5; i++) {
-    await prisma.attendanceLog.create({
-      data: {
-        roomId: room1.id,
-        className: 'Class A',
-        period: i + 1,
-        count: Math.floor(Math.random() * 30) + 10,
-        imageUrl: `https://example.com/attendance/room1/period${i + 1}.jpg`,
-      },
-    });
-
-    await prisma.attendanceLog.create({
-      data: {
-        roomId: room2.id,
-        className: 'Class B',
-        period: i + 1,
-        count: Math.floor(Math.random() * 25) + 5,
-        imageUrl: `https://example.com/attendance/room2/period${i + 1}.jpg`,
-      },
+    await prisma.attendanceLog.createMany({
+      data: [
+        {
+          roomId: room1.id,
+          className: 'Class A',
+          period: i + 1,
+          count: Math.floor(Math.random() * 30) + 10,
+          imageUrl: `https://example.com/attendance/room1/period${i + 1}.jpg`,
+        },
+        {
+          roomId: room2.id,
+          className: 'Class B',
+          period: i + 1,
+          count: Math.floor(Math.random() * 25) + 5,
+          imageUrl: `https://example.com/attendance/room2/period${i + 1}.jpg`,
+        },
+      ],
     });
   }
 
   console.log('✅ Created attendance logs');
-
   console.log('✨ Database seed completed successfully!');
 }
 

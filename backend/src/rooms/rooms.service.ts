@@ -129,10 +129,7 @@ export class RoomsService {
       },
     });
   }
-  async sendIRButton(
-    roomId: string,
-    dto: SendIRButtonDto,
-  ) {
+  async sendIRButton(roomId: string, dto: SendIRButtonDto) {
     // await this.validateRoomAccess(roomId, userId, role);
 
     // Lấy danh sách điều hòa trong phòng

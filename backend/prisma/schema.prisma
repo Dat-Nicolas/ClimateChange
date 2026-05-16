@@ -54,7 +54,7 @@ model Room {
   currentPeople      Int    @default(0)
   currentTemperature Float  @default(26)
 
-  minPeopleToTurnOn Int     @default(1)
+  minPeopleToTurnOn Int     @default(5)
   minTempToTurnOn   Float   @default(28)
   peoplePerAC       Int     @default(10)
   defaultTemp       Float   @default(25)
@@ -82,10 +82,9 @@ model Room {
 model Brand {
   id   String @id @default(uuid())
   name String @unique
-
   airConditioners AirConditioner[]
-  irButtons       IRButton[]
-
+  irButtons  IRButton[]
+  irProtocol  String
   createdAt DateTime @default(now())
 }
 
