@@ -71,18 +71,13 @@ const api = {
 
 export const roomService = {
   getRooms: () => api.get("/rooms"),
-  getRoomDetail: (roomId: string, roomName?: string, userId?: string) => {
-    const safeRoomName = roomName ?? "";
-    const safeUserId = userId ?? "";
-    const queryParts = [
-      `roomId=${encodeURIComponent(roomId)}`,
-      `roomName=${encodeURIComponent(safeRoomName)}`,
-      `userId=${encodeURIComponent(safeUserId)}`,
-    ];
-    return api.get(`/rooms/${roomId}?${queryParts.join("&")}`);
-  },
+  getRoomDetail: (roomId: string) => api.get(`/rooms/${roomId}`),
   updateRoom: (roomId: string, data: any) =>
     api.patch(`/rooms/${roomId}`, data),
+
+  // Send IR command to all ACs in room (omit airConditionerId)
+  sendIRButton: (roomId: string, data: { buttonName: string; airConditionerId?: string }) =>
+    api.post(`/rooms/${roomId}/ac/send-button`, data),
 };
 
 export const acService = {

@@ -133,13 +133,13 @@ const DashboardScreen = () => {
     fetchWeather();
   }, [fetchRooms, fetchWeather]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchRooms();
-    }, 5000); // 5s
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     fetchRooms();
+  //   }, 5000); // 5s
 
-    return () => clearInterval(interval);
-  }, [fetchRooms]);
+  //   return () => clearInterval(interval);
+  // }, [fetchRooms]);
 
   useEffect(() => {
     let mounted = true;

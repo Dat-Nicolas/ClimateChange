@@ -74,39 +74,6 @@ type RoomDetailData = {
   updatedAt: string;
 };
 
-const fallbackRoom = (roomId: string, roomName: string): RoomDetailData => ({
-  id: roomId,
-  name: roomName,
-  location: "Không xác định",
-  currentTemperature: 24,
-  currentPeople: 12,
-  minPeopleToTurnOn: 6,
-  minTempToTurnOn: 25,
-  roomTemperature: null,
-  peoplePerAC: 10,
-  autoMode: true,
-  startTime: "08:00",
-  endTime: "18:00",
-  acAutoControlEnabled: true,
-  userId: "",
-  airConditioners: [
-    {
-      id: `${roomId}-ac-1`,
-      name: "AC #1",
-      status: "ON",
-      currentTemp: 22,
-      mode: "COOL",
-      brandId: "",
-      roomId: roomId,
-      brand: { id: "", name: "Unknown", irProtocol: "", createdAt: "" },
-      createdAt: "",
-      updatedAt: "",
-    },
-  ],
-  schedules: [],
-  createdAt: new Date().toISOString(),
-  updatedAt: new Date().toISOString(),
-});
 
 const RoomDetailScreen = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -448,8 +415,33 @@ const RoomDetailScreen = () => {
 
       acPillRow: {
         flexDirection: "row",
-        flexWrap: "wrap",
         gap: 8,
+        justifyContent: "space-between",
+        alignItems: "center",
+      },
+
+      acListAndPowerRow: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "flex-start",
+        gap: 12,
+        marginTop: 4,
+      },
+
+      acListColumn: {
+        flex: 1,
+        flexDirection: "row",
+      },
+
+      powerColumn: {
+        width: 110,
+        alignItems: "flex-end",
+        paddingTop: 4,
+      },
+
+      cpntrolonoff: {
+        flexDirection: "row",
+        justifyContent: "space-between",
       },
 
       acPill: {
@@ -473,6 +465,57 @@ const RoomDetailScreen = () => {
       acPillSelected: {
         borderColor: theme.colors.success,
         borderWidth: 2,
+      },
+
+      sourceControlCard: {
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: border,
+        backgroundColor: cardBg,
+        padding: 14,
+        marginTop: 12,
+        marginBottom: 10,
+      },
+
+      sourceControlRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 10,
+      },
+
+      sourceControlTitle: {
+        fontSize: 14,
+        fontWeight: "800",
+        color: theme.colors.text,
+      },
+
+      sourceControlSubtitle: {
+        fontSize: 10,
+        color: mutedText,
+        marginTop: 4,
+      },
+
+      sourceBtn: {
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 999,
+        borderWidth: 1,
+        borderColor: border,
+        backgroundColor: theme.colors.surfaceVariant,
+      },
+
+      sourceBtnOn: {
+        borderColor: theme.colors.success,
+      },
+
+      sourceBtnText: {
+        fontSize: 12,
+        fontWeight: "800",
+        color: theme.colors.text,
       },
 
       autoCard: {
@@ -538,7 +581,7 @@ const RoomDetailScreen = () => {
       setError(null);
       setIsLoading(true);
 
-      const data = await roomService.getRoomDetail(roomId, roomName, userId);
+      const data = await roomService.getRoomDetail(roomId);
 
       if (!data) {
         throw new Error("Không có dữ liệu phòng");
@@ -597,7 +640,7 @@ const RoomDetailScreen = () => {
     } catch (error: any) {
       console.error(error);
       setError(error?.message || "Không thể tải dữ liệu");
-      setRoom(fallbackRoom(roomId, roomName));
+      setRoom(null);
     } finally {
       setIsLoading(false);
     }
@@ -607,6 +650,9 @@ const RoomDetailScreen = () => {
     if (!room || !room.acAutoControlEnabled) return;
 
     const shouldAllBeOn = room.currentPeople >= room.minPeopleToTurnOn;
+    console.log("Current People:", room.currentPeople);
+    console.log("Min People to Turn On:", room.minPeopleToTurnOn);
+    console.log("Should All Be On:", shouldAllBeOn);
 
     const newStatus: "ON" | "OFF" = shouldAllBeOn ? "ON" : "OFF";
 
@@ -663,6 +709,17 @@ const RoomDetailScreen = () => {
     if (!room) return;
 
     try {
+      const isTurningPower = command.status === "ON" || command.status === "OFF";
+
+      // Nếu đang auto, nút nguồn sẽ bị ghi đè -> yêu cầu tắt auto trước
+      if (isTurningPower && room.acAutoControlEnabled) {
+        Alert.alert(
+          "Tắt chế độ tự động",
+          "Đang bật Auto Control. Hãy tắt chế độ tự động để điều khiển nguồn (bật/tắt).",
+        );
+        return;
+      }
+
       setIsAdjustingTemp(true);
 
       // Nếu điều chỉnh nhiệt độ, tập hợp tất cả AC
@@ -683,25 +740,36 @@ const RoomDetailScreen = () => {
 
       // Tự động bật/tắt dựa trên số người
       const shouldAllBeOn = room.currentPeople >= room.minPeopleToTurnOn;
-      const autoStatus = room.acAutoControlEnabled
-        ? shouldAllBeOn
-          ? "ON"
-          : "OFF"
-        : command.status;
+
+      const autoStatus: "ON" | "OFF" = (() => {
+        if (room.acAutoControlEnabled) return shouldAllBeOn ? "ON" : "OFF";
+
+        const statusFromCommand = command.status;
+        if (statusFromCommand === "ON" || statusFromCommand === "OFF") {
+          return statusFromCommand;
+        }
+
+        const statusFromRoom = room.airConditioners[0]?.status;
+        if (statusFromRoom === "ON" || statusFromRoom === "OFF") {
+          return statusFromRoom;
+        }
+
+        return shouldAllBeOn ? "ON" : "OFF";
+      })();
 
       // Cập nhật tất cả AC với trạng thái auto + nhiệt độ mới
       const acUpdates = room.airConditioners.map((ac) => ({
         ...ac,
         status: autoStatus,
         currentTemp: isTemperatureAdjustment
-          ? command.temperature
+          ? (command.temperature as number)
           : ac.currentTemp,
         mode: command.mode ?? ac.mode,
       }));
 
       // Gửi request cập nhật cho từng AC
       await Promise.all(
-        room.airConditioners.map((ac, idx) =>
+        room.airConditioners.map((ac) =>
           acService.controlAC(ac.id, {
             status: autoStatus,
             temperature: isTemperatureAdjustment
@@ -909,53 +977,134 @@ const RoomDetailScreen = () => {
             </View>
           </View>
 
+          
+
           <Text
             style={[styles.acSummaryLabel, { marginTop: 12, marginBottom: 8 }]}
           >
             Danh sách điều hòa ({room.airConditioners.length})
           </Text>
 
-          <View style={styles.acPillRow}>
-            {room.airConditioners.map((ac, index) => (
-              <TouchableOpacity
-                key={ac.id}
-                style={[
-                  styles.acPill,
-                  ac.status === "ON"
-                    ? styles.acPillRunning
-                    : styles.acPillStopped,
-                  selectedAcIndex === index && styles.acPillSelected,
-                ]}
-                onPress={() => setSelectedAcIndex(index)}
-              >
-                <Text
-                  style={{
-                    fontSize: 11,
-                    fontWeight: "700",
-                    color: ac.status === "ON" ? "#000" : theme.colors.text,
-                    textAlign: "center",
-                  }}
-                  numberOfLines={1}
+
+
+
+
+          <View style={styles.acListAndPowerRow}>
+            <View style={styles.acListColumn}>
+              {room.airConditioners.map((ac, index) => (
+                <TouchableOpacity
+                  key={ac.id}
+                  style={[
+                    styles.acPill,
+                    ac.status === "ON"
+                      ? styles.acPillRunning
+                      : styles.acPillStopped,
+                    selectedAcIndex === index && styles.acPillSelected,
+                  ]}
+                  onPress={() => setSelectedAcIndex(index)}
                 >
-                  {ac.name}
+                  <Text
+                    style={{
+                      fontSize: 11,
+                      fontWeight: "700",
+                      color: ac.status === "ON" ? "#000" : theme.colors.text,
+                      textAlign: "center",
+                    }}
+                    numberOfLines={1}
+                  >
+                    {ac.name}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+
+            </View>
+
+            <View style={styles.powerColumn}>
+              <TouchableOpacity
+                style={[
+                  styles.sourceBtn,
+                  currentAc.status === "ON" ? styles.sourceBtnOn : undefined,
+                ]}
+                onPress={async () => {
+                  const nextStatus: "ON" | "OFF" =
+                    currentAc.status === "ON" ? "OFF" : "ON";
+
+                  // Nếu đang auto, nút nguồn sẽ bị ghi đè -> yêu cầu tắt auto trước
+                  // if (room?.acAutoControlEnabled) {
+                  //   Alert.alert(
+                  //     "Tắt chế độ tự động",
+                  //     "Đang bật Auto Control. Hãy tắt chế độ tự động để điều khiển nguồn (bật/tắt).",
+                  //   );
+                  //   return;
+                  // }
+
+                  try {
+                    setIsAdjustingTemp(true);
+
+                    await Promise.all(
+                      room.airConditioners.map((ac) =>
+                        acService.controlAC(ac.id, {
+                          status: nextStatus,
+                          temperature: ac.currentTemp,
+                          mode: ac.mode,
+                        }),
+                      ),
+                    );
+
+                    setRoom((prev) => {
+                      if (!prev) return prev;
+                      return {
+                        ...prev,
+                        airConditioners: prev.airConditioners.map((ac) => ({
+                          ...ac,
+                          status: nextStatus,
+                        })),
+                      };
+                    });
+                  } catch (error: any) {
+                    Alert.alert(
+                      "Thông báo",
+                      error?.message || "Không thể điều khiển AC",
+                    );
+                  } finally {
+                    setIsAdjustingTemp(false);
+                  }
+                }}
+                disabled={isAdjustingTemp}
+              >
+                <Ionicons
+                  name={currentAc.status === "ON" ? "power" : "power-outline"}
+                  size={18}
+                  color={
+                    currentAc.status === "ON"
+                      ? theme.colors.success
+                      : theme.colors.textSecondary
+                  }
+                />
+                <Text style={styles.sourceBtnText}>
+                  {currentAc.status === "ON" ? "Tắt" : "Bật"}
                 </Text>
               </TouchableOpacity>
-            ))}
+            </View>
           </View>
+
+          
 
           <View style={styles.ringWrap}>
             <TouchableOpacity
               style={[
                 styles.adjustBtn,
                 styles.adjustTop,
-                (room.currentPeople < 6 || isAdjustingTemp) && { opacity: 0.5 },
+                (isAdjustingTemp) && { opacity: 0.5 },
+                currentAc.currentTemp >= 30 && { opacity: 0.5 },
               ]}
-              onPress={() =>
+              onPress={() => {
+                if (currentAc.currentTemp >= 30) return;
                 handleControl({
                   temperature: Math.min(currentAc.currentTemp + 1, 30),
-                })
-              }
-              disabled={room.currentPeople < 6 || isAdjustingTemp}
+                });
+              }}
+              disabled={isAdjustingTemp || currentAc.currentTemp >= 30}
             >
               {isAdjustingTemp ? (
                 <ActivityIndicator
@@ -968,7 +1117,7 @@ const RoomDetailScreen = () => {
                 <Ionicons
                   name="add"
                   size={18}
-                  color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+                  color={currentAc.currentTemp >= 30 || room.currentPeople < 6 ? "#999" : theme.colors.success}
                 />
               )}
             </TouchableOpacity>
@@ -985,14 +1134,16 @@ const RoomDetailScreen = () => {
               style={[
                 styles.adjustBtn,
                 styles.adjustBottom,
-                (room.currentPeople < 6 || isAdjustingTemp) && { opacity: 0.5 },
+                (isAdjustingTemp) && { opacity: 0.5 },
+                currentAc.currentTemp <= 17 && { opacity: 0.5 },
               ]}
-              onPress={() =>
+              onPress={() => {
+                if (currentAc.currentTemp <= 17) return;
                 handleControl({
-                  temperature: Math.max(currentAc.currentTemp - 1, 16),
-                })
-              }
-              disabled={room.currentPeople < 6 || isAdjustingTemp}
+                  temperature: Math.max(currentAc.currentTemp - 1, 17),
+                });
+              }}
+              disabled={isAdjustingTemp || currentAc.currentTemp <= 17}
             >
               {isAdjustingTemp ? (
                 <ActivityIndicator
@@ -1005,7 +1156,7 @@ const RoomDetailScreen = () => {
                 <Ionicons
                   name="remove"
                   size={18}
-                  color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+                  color={currentAc.currentTemp <= 17 || room.currentPeople < 6 ? "#999" : theme.colors.success}
                 />
               )}
             </TouchableOpacity>
@@ -1183,29 +1334,128 @@ const RoomDetailScreen = () => {
                 Nhập số người tối thiểu để tự động bật điều hòa
               </Text>
 
-              <View
-                style={{
-                  borderWidth: 1,
-                  borderColor: theme.colors.outlineVariant,
-                  borderRadius: 12,
-                  paddingHorizontal: 16,
-                  marginBottom: 16,
-                  backgroundColor: theme.colors.background,
-                }}
-              >
-                <TextInput
+              <View style={{ marginBottom: 16 }}>
+                <Text
                   style={{
-                    fontSize: 16,
-                    color: theme.colors.text,
-                    paddingVertical: 12,
+                    fontSize: 12,
+                    color: theme.colors.textSecondary,
+                    marginBottom: 8,
+                    fontWeight: "600",
                   }}
-                  placeholder="Nhập số người"
-                  placeholderTextColor={theme.colors.textSecondary}
-                  keyboardType="number-pad"
-                  value={newMinPeople}
-                  onChangeText={setNewMinPeople}
-                  editable={!isUpdatingMinPeople}
-                />
+                >
+                  Tối thiểu để tự động bật
+                </Text>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    borderWidth: 1,
+                    borderColor: theme.colors.outlineVariant,
+                    borderRadius: 12,
+                    paddingVertical: 12,
+                    paddingHorizontal: 10,
+                    backgroundColor: theme.colors.background,
+                    gap: 10,
+                  }}
+                >
+                  {/* Minus */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (isUpdatingMinPeople) return;
+                      const current = parseInt(newMinPeople, 10);
+                      const next = Number.isNaN(current) ? 1 : Math.max(1, current - 1);
+                      setNewMinPeople(next.toString());
+                    }}
+                    disabled={isUpdatingMinPeople}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: theme.colors.outlineVariant,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: isUpdatingMinPeople ? 0.6 : 1,
+                      backgroundColor: theme.colors.surfaceVariant,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: theme.colors.text,
+                        lineHeight: 22,
+                      }}
+                    >
+                      -
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Center: Icon + value */}
+                  <View style={{ flex: 1, alignItems: "center" }}>
+                    <Ionicons
+                      name="person"
+                      size={22}
+                      color={theme.colors.textSecondary}
+                    />
+                    <Text
+                      style={{
+                        marginTop: 6,
+                        fontSize: 20,
+                        fontWeight: "800",
+                        color: theme.colors.text,
+                      }}
+                    >
+                      {newMinPeople}
+                    </Text>
+                    <Text
+                      style={{
+                        marginTop: 2,
+                        fontSize: 10,
+                        color: theme.colors.textSecondary,
+                        fontWeight: "700",
+                      }}
+                    >
+                      người
+                    </Text>
+                  </View>
+
+                  {/* Plus */}
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (isUpdatingMinPeople) return;
+                      const current = parseInt(newMinPeople, 10);
+                      const safeCurrent = Number.isNaN(current) ? 1 : current;
+                      const next = safeCurrent + 1;
+                      setNewMinPeople(next.toString());
+                    }}
+                    disabled={isUpdatingMinPeople}
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      borderWidth: 1,
+                      borderColor: theme.colors.success,
+                      alignItems: "center",
+                      justifyContent: "center",
+                      opacity: isUpdatingMinPeople ? 0.6 : 1,
+                      backgroundColor: theme.colors.surfaceVariant,
+                    }}
+                  >
+                    <Text
+                      style={{
+                        fontSize: 22,
+                        fontWeight: "800",
+                        color: theme.colors.success,
+                        lineHeight: 22,
+                      }}
+                    >
+                      +
+                    </Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               <View style={{ flexDirection: "row", gap: 12 }}>
