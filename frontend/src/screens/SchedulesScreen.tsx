@@ -605,6 +605,8 @@ const toggleDay = (day: string) => {
                         borderRadius: 10,
                         border: "1px solid #ccc",
                         width: "100%",
+                        maxWidth: "100%",
+                        boxSizing: "border-box",
                         marginBottom: 10,
                       }}
                     />
@@ -638,6 +640,8 @@ const toggleDay = (day: string) => {
                     borderRadius: 10,
                     border: "1px solid #ccc",
                     width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
                     marginBottom: 10,
                   }}
                 />
@@ -684,6 +688,8 @@ const toggleDay = (day: string) => {
                     borderRadius: 10,
                     border: "1px solid #ccc",
                     width: "100%",
+                    maxWidth: "100%",
+                    boxSizing: "border-box",
                     marginBottom: 10,
                   }}
                 />
