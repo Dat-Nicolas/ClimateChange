@@ -78,17 +78,14 @@ export class SchedulesService {
       where: { id: data.roomId },
     });
 
-    if (!room) {
-      throw new NotFoundException('Phòng không tồn tại');
-    }
+    if (!room) throw new NotFoundException('Room not found');
 
-    if (room.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền quản lý phòng này');
-    }
+    if (room.userId !== userId) throw new ForbiddenException('No permission');
 
     return this.prisma.schedule.create({
       data: {
         roomId: data.roomId,
+        scheduleDate: data.scheduleDate,
         startTime: data.startTime,
         endTime: data.endTime,
         isActive: data.isActive ?? true,
@@ -97,26 +94,24 @@ export class SchedulesService {
     });
   }
 
-  // =========================
-  // UPDATE
-  // =========================
   async update(id: string, userId: string, data: any) {
     const schedule = await this.prisma.schedule.findUnique({
       where: { id },
       include: { room: true },
     });
 
-    if (!schedule) {
-      throw new NotFoundException('Lịch trình không tồn tại');
-    }
+    if (!schedule) throw new NotFoundException();
 
-    if (schedule.room.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền sửa');
-    }
+    if (schedule.room.userId !== userId) throw new ForbiddenException();
 
     return this.prisma.schedule.update({
       where: { id },
-      data,
+      data: {
+        scheduleDate: data.scheduleDate,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        isActive: data.isActive,
+      },
       include: { room: true },
     });
   }
@@ -161,7 +156,9 @@ export class SchedulesService {
     this.logger.warn(`UserId: ${userId}`);
     this.logger.warn(`User rooms: ${JSON.stringify(roomsOfUser)}`);
     this.logger.warn(`RoomIds used: ${JSON.stringify(roomIds)}`);
-    this.logger.warn(`Sample schedule roomIds: ${JSON.stringify(someSchedules)}`);
+    this.logger.warn(
+      `Sample schedule roomIds: ${JSON.stringify(someSchedules)}`,
+    );
     this.logger.warn('================================================');
   }
 }

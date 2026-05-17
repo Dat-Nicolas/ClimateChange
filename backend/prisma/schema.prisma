@@ -148,16 +148,18 @@ model ActivityLog {
 }
 
 model Schedule {
-  id        String    @id @default(uuid())
-  roomId    String
-  startTime String
-  endTime   String
-  isActive  Boolean   @default(true)
-  room      Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  id            String    @id @default(uuid())
+  roomId        String
+  scheduleDate DayOfWeek[]   
+  startTime     String
+  endTime       String
+  isActive      Boolean   @default(true)
+  room          Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 
   @@index([roomId])
+  @@index([scheduleDate])
 }
 
 model AttendanceLog {
