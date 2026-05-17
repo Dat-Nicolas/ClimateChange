@@ -50,6 +50,7 @@ export class RoomsService {
       include: {
         airConditioners: { include: { brand: true } },
         schedules: true,
+        streamKey: true,
       },
     });
   }
