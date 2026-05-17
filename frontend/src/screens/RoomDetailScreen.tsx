@@ -852,25 +852,55 @@ const RoomDetailScreen = () => {
       >
         <Text style={styles.sectionTitle}>Camera Trực Tiếp</Text>
 
-        <View style={styles.cameraCard}>
-          <View style={styles.recBadge}>
-            <View style={styles.recDot} />
-            <Text style={styles.recText}>REC</Text>
-          </View>
+         <View style={styles.cameraCard}>
+      {room.streamKey ? (
+        <WebView
+          source={{
+            uri: `https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`,
+          }}
+          style={styles.cameraStream}
+          javaScriptEnabled
+          domStorageEnabled
+          allowsInlineMediaPlayback
+          mediaPlaybackRequiresUserAction={false}
+          scrollEnabled={false}
+        />
+      ) : (
+        <View style={styles.noCameraContainer}>
+          <Ionicons
+            name="videocam-off"
+            size={40}
+            color="#999"
+          />
 
-          <Text style={styles.timeText}>
-            {new Date().toLocaleString("vi-VN")}
+          <Text style={styles.noCameraText}>
+            Chưa cấu hình camera
           </Text>
-
-          <View style={styles.playButton}>
-            <Ionicons name="play" size={28} color="#fff" />
-          </View>
-
-          <View style={styles.cameraFooter}>
-            <Text style={styles.cameraMeta}>CAM 01</Text>
-            <Text style={styles.cameraMeta}>Phòng {room.name}</Text>
-          </View>
         </View>
+      )}
+
+      {/* REC */}
+      <View style={styles.recBadge}>
+        <View style={styles.recDot} />
+        <Text style={styles.recText}>REC</Text>
+      </View>
+
+      {/* TIME */}
+      <Text style={styles.timeText}>
+        {new Date().toLocaleString("vi-VN")}
+      </Text>
+
+      {/* FOOTER */}
+      <View style={styles.cameraFooter}>
+        <Text style={styles.cameraMeta}>
+          {room.streamKey || "NO CAM"}
+        </Text>
+
+        <Text style={styles.cameraMeta}>
+          Phòng {room.name}
+        </Text>
+      </View>
+    </View>
 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
