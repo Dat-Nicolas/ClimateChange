@@ -47,10 +47,11 @@ export class RoomsService {
   async findOne(id: string) {
     return this.prisma.room.findUnique({
       where: { id },
-      include: {
-        airConditioners: { include: { brand: true } },
-        schedules: true,
-        streamKey: true,
+      select: {
+        id: true,
+        name: true,
+        location: true,
+        streamKey: true, 
       },
     });
   }
