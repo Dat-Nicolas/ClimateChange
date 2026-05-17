@@ -13,7 +13,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth, ApiBody } from '@nestjs/swagger';
 import { RoomsService } from './rooms.service';
 import { UpdateRoomSettingsDto } from './dto/update-room-settings.dto';
 import { SendIRButtonDto } from './dto/send-ir-button.dto';
-import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 
 @ApiTags('Rooms')
 @ApiBearerAuth()
