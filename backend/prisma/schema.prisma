@@ -54,6 +54,7 @@ model Room {
   currentPeople      Int    @default(0)
   currentTemperature Float  @default(26)
 
+  streamKey         String? @unique
   minPeopleToTurnOn Int     @default(5)
   minTempToTurnOn   Float   @default(28)
   roomTemperature   Float?
@@ -148,16 +149,14 @@ model ActivityLog {
 }
 
 model Schedule {
-  id            String    @id @default(uuid())
-  roomId        String
-  scheduleDate String
-  daysOfWeek   DayOfWeek[]
-  startTime     String
-  endTime       String
-  isActive      Boolean   @default(true)
-  room          Room      @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id        String   @id @default(uuid())
+  roomId    String
+  startTime String
+  endTime   String
+  isActive  Boolean  @default(true)
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([roomId])
   @@index([scheduleDate])
