@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   RefreshControl,
-  TextInput,
   Modal,
   Switch,
   Alert,
@@ -22,10 +21,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
 
+type Room = {
+  id: string;
+  name: string;
+  location: string;
+};
+
 type Schedule = {
   id: string;
   roomId: string;
-  dayOfWeek: string;
+  scheduleDate: string;
+  daysOfWeek?: string[];
   startTime: string;
   endTime: string;
   isActive: boolean;
@@ -35,17 +41,31 @@ type Schedule = {
   };
 };
 
+// Map ngày hiển thị (T2..CN) <-> backend (MONDAY..SUNDAY)
+const DAYS = [
+  { label: "T2", value: "MONDAY" },
+  { label: "T3", value: "TUESDAY" },
+  { label: "T4", value: "WEDNESDAY" },
+  { label: "T5", value: "THURSDAY" },
+  { label: "T6", value: "FRIDAY" },
+  { label: "T7", value: "SATURDAY" },
+  { label: "CN", value: "SUNDAY" },
+];
+
+const ALL_DAYS_OF_WEEK = DAYS.map((d) => d.value);
+
 const API_URL = process.env.EXPO_PUBLIC_BASE_URL ?? "http://192.168.1.10:3000";
 
-const emptyForm: Omit<Schedule, "id"> = {
+const emptyForm: Omit<Schedule, "id" | "room"> = {
   roomId: "",
-  dayOfWeek: "MONDAY",
+  scheduleDate: "",
   startTime: "",
   endTime: "",
   isActive: true,
+  daysOfWeek: [],
 };
 
-type FormState = Omit<Schedule, "id">;
+type FormState = Omit<Schedule, "id" | "room">;
 
 const SchedulesScreen = () => {
   const { theme } = useTheme();
@@ -53,18 +73,59 @@ const SchedulesScreen = () => {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [rooms, setRooms] = useState<
-    { id: string; name: string; location: string }[]
-  >([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
+  const [daysOfWeek, setDaysOfWeek] = useState<string[]>([]);
   const formatTime = (date: Date) => {
-    return date.toTimeString().slice(0, 5); // HH:mm
+    return date.toTimeString().slice(0, 5); // HH:mm:ss -> HH:mm
+  };
+
+  const resetFormState = () => {
+    setForm(emptyForm);
+    setEditId(null);
+    setDaysOfWeek([]);
+    setShowDatePicker(false);
+    setShowStartPicker(false);
+    setShowEndPicker(false);
+  };
+
+  const formatDate = (date: Date) => {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  };
+
+// Khi user chọn/tắt từng ngày (mode "ngày cụ thể")
+const toggleDay = (day: string) => {
+  setDaysOfWeek((prev) =>
+    prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day],
+  );
+};
+
+  const formatDays = (days?: string[]) => {
+    if (!days || days.length === 0) return null;
+
+    if (days.length === 7) return "Hàng ngày";
+
+    const map: any = {
+      MONDAY: "T2",
+      TUESDAY: "T3",
+      WEDNESDAY: "T4",
+      THURSDAY: "T5",
+      FRIDAY: "T6",
+      SATURDAY: "T7",
+      SUNDAY: "CN",
+    };
+
+    return days.map((d) => map[d]).join(", ");
   };
 
   // ================= STYLES =================
@@ -75,10 +136,6 @@ const SchedulesScreen = () => {
           flex: 1,
           justifyContent: "center",
           alignItems: "center",
-          backgroundColor: theme.colors.background,
-        },
-        list: {
-          flex: 1,
           backgroundColor: theme.colors.background,
         },
         card: {
@@ -117,18 +174,15 @@ const SchedulesScreen = () => {
           marginTop: 12,
           gap: 10,
         },
-        modalOverlay: {
-          flex: 1,
-          backgroundColor: theme.colors.overlay,
+        headerRightBtn: {
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          alignItems: "center",
           justifyContent: "center",
-          paddingHorizontal: 16,
-        },
-        modal: {
-          backgroundColor: theme.colors.surface,
-          borderRadius: theme.roundness.lg,
           borderWidth: 1,
           borderColor: theme.colors.outlineVariant,
-          padding: 16,
+          backgroundColor: theme.colors.surface,
         },
         input: {
           borderWidth: 1,
@@ -150,21 +204,18 @@ const SchedulesScreen = () => {
           color: theme.colors.surface,
           fontWeight: "800",
         },
-        cancelText: {
-          marginTop: 12,
-          textAlign: "center",
-          color: theme.colors.textSecondary,
-          fontWeight: "700",
-        },
-        headerRightBtn: {
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          alignItems: "center",
+        modalOverlay: {
+          flex: 1,
+          backgroundColor: theme.colors.overlay,
           justifyContent: "center",
+          paddingHorizontal: 16,
+        },
+        modal: {
+          backgroundColor: theme.colors.surface,
+          borderRadius: theme.roundness.lg,
           borderWidth: 1,
           borderColor: theme.colors.outlineVariant,
-          backgroundColor: theme.colors.surface,
+          padding: 16,
         },
       }),
     [theme],
@@ -173,7 +224,6 @@ const SchedulesScreen = () => {
   // ================= API =================
   const fetchSchedules = async () => {
     try {
-      setError(null);
       const token = await AsyncStorage.getItem("user_token");
 
       const res = await fetch(`${API_URL}/schedules`, {
@@ -184,9 +234,9 @@ const SchedulesScreen = () => {
 
       const data = await res.json();
       setSchedules(Array.isArray(data) ? data : []);
-    } catch (err: any) {
-      setError(err?.message ?? "Failed to load schedules");
+    } catch (err) {
       setSchedules([]);
+      console.log(err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -204,9 +254,10 @@ const SchedulesScreen = () => {
       });
 
       const data = await res.json();
-      setRooms(data);
+      setRooms(Array.isArray(data) ? data : []);
     } catch (err) {
       console.log(err);
+      setRooms([]);
     }
   };
 
@@ -223,21 +274,48 @@ const SchedulesScreen = () => {
   // ================= CREATE / UPDATE =================
   const submitSchedule = async () => {
     try {
+      // 1. ROOM
       if (!form.roomId) {
-        Alert.alert("Lỗi", "Vui lòng chọn phòng");
-        return;
+        return Alert.alert("Thiếu dữ liệu", "Vui lòng chọn phòng");
       }
 
-      if (!form.startTime || !form.endTime) {
-        Alert.alert("Lỗi", "Nhập đầy đủ thời gian");
-        return;
+      // 2. MODE (daily or specific date)
+      if (daysOfWeek.length === 0 && !form.scheduleDate) {
+        return Alert.alert(
+          "Thiếu dữ liệu",
+          "Chọn ít nhất 1 ngày hoặc 1 ngày cụ thể",
+        );
       }
+
+      // 3. TIME
+      if (!form.startTime || !form.endTime) {
+        return Alert.alert(
+          "Thiếu dữ liệu",
+          "Vui lòng chọn giờ bắt đầu và kết thúc",
+        );
+      }
+
       if (form.startTime >= form.endTime) {
-        Alert.alert("Lỗi", "Giờ kết thúc phải lớn hơn giờ bắt đầu");
-        return;
+        return Alert.alert(
+          "Sai thời gian",
+          "Giờ kết thúc phải lớn hơn giờ bắt đầu",
+        );
       }
 
       const token = await AsyncStorage.getItem("user_token");
+
+      const payload = {
+        roomId: form.roomId,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        isActive: form.isActive,
+        // Prisma yêu cầu scheduleDate luôn là string => không được gửi null
+        scheduleDate:
+          daysOfWeek.length > 0
+            ? form.scheduleDate || formatDate(new Date())
+            : form.scheduleDate || formatDate(new Date()),
+        daysOfWeek: daysOfWeek.length > 0 ? daysOfWeek : [],
+      };
 
       const url = editId
         ? `${API_URL}/schedules/${editId}`
@@ -251,10 +329,12 @@ const SchedulesScreen = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Save failed");
+      if (!res.ok) {
+        return Alert.alert("Lỗi", "Không thể lưu lịch, thử lại sau");
+      }
 
       const saved = await res.json();
 
@@ -265,43 +345,52 @@ const SchedulesScreen = () => {
       }
 
       setModalVisible(false);
-      setForm(emptyForm);
-      setEditId(null);
+      resetFormState();
     } catch (err) {
       console.log(err);
+      Alert.alert("Lỗi", "Có lỗi xảy ra khi tạo lịch");
     }
   };
+
   // ================= DELETE =================
   const deleteSchedule = (id: string) => {
-    console.log("CLICK DELETE"); // debug
+    const confirmDelete = async () => {
+      try {
+        const token = await AsyncStorage.getItem("user_token");
 
-    Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa lịch này không?", [
-      { text: "Hủy", style: "cancel" },
-      {
-        text: "Xóa",
-        style: "destructive",
-        onPress: async () => {
-          console.log("CONFIRMED DELETE");
+        await fetch(`${API_URL}/schedules/${id}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
 
-          const token = await AsyncStorage.getItem("user_token");
+        setSchedules((prev) => prev.filter((i) => i.id !== id));
+      } catch (err) {
+        console.log(err);
+      }
+    };
 
-          await fetch(`${API_URL}/schedules/${id}`, {
-            method: "DELETE",
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          setSchedules((prev) => prev.filter((i) => i.id !== id));
-        },
-      },
-    ]);
+    if (Platform.OS === "web") {
+      const ok = window.confirm("Bạn có chắc chắn muốn xóa lịch này không?");
+      if (ok) confirmDelete();
+    } else {
+      Alert.alert("Xác nhận xóa", "Bạn có chắc chắn muốn xóa lịch này không?", [
+        { text: "Hủy", style: "cancel" },
+        { text: "Xóa", style: "destructive", onPress: confirmDelete },
+      ]);
+    }
   };
 
   // ================= EDIT =================
   const onEdit = (item: Schedule) => {
     setEditId(item.id);
+
+    const incomingDays = Array.isArray(item.daysOfWeek) ? item.daysOfWeek : [];
+
+    setDaysOfWeek(incomingDays);
+
     setForm({
       roomId: item.roomId,
-      dayOfWeek: item.dayOfWeek,
+      scheduleDate: item.scheduleDate,
       startTime: item.startTime,
       endTime: item.endTime,
       isActive: item.isActive,
@@ -345,7 +434,11 @@ const SchedulesScreen = () => {
         />
       </View>
 
-      <Text style={styles.text}>{item.dayOfWeek}</Text>
+      <Text style={styles.text}>
+        {item.daysOfWeek?.length
+          ? formatDays(item.daysOfWeek)
+          : item.scheduleDate || "Không có ngày"}
+      </Text>
       <Text style={styles.textSmall}>Room: {item.room?.name ?? "N/A"}</Text>
 
       <View style={styles.actions}>
@@ -380,8 +473,7 @@ const SchedulesScreen = () => {
           <TouchableOpacity
             style={styles.headerRightBtn}
             onPress={() => {
-              setForm(emptyForm);
-              setEditId(null);
+              resetFormState();
               setModalVisible(true);
             }}
           >
@@ -399,18 +491,15 @@ const SchedulesScreen = () => {
         }
       />
 
-      {/* ================= MODAL FIXED ================= */}
       <Modal visible={modalVisible} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={{ flex: 1 }}
         >
-          {/* OUTSIDE CLICK CLOSE */}
           <Pressable
             style={styles.modalOverlay}
             onPress={() => setModalVisible(false)}
           >
-            {/* INSIDE BLOCK - STOP PROPAGATION FIX */}
             <Pressable
               style={styles.modal}
               onPress={(e) => e.stopPropagation()}
@@ -420,108 +509,233 @@ const SchedulesScreen = () => {
               >
                 {editId ? "Cập nhật lịch" : "Tạo lịch"}
               </Text>
-              <View style={{ marginBottom: 10 }}>
-                <View>
-                  <Picker
-                    selectedValue={form.roomId}
-                    onValueChange={(v) =>
-                      setForm((prev) => ({ ...prev, roomId: v }))
-                    }
-                    style={styles.input}
-                  >
-                    <Picker.Item label=" Chọn phòng" />
 
-                    {rooms.map((r) => (
-                      <Picker.Item
-                        key={r.id}
-                        label={`${r.name} (${r.location})`}
-                        value={r.id}
-                      />
-                    ))}
-                  </Picker>
-                </View>
+              {/* ROOM */}
+              <View style={{ marginBottom: 10 }}>
+                <Picker
+                  selectedValue={form.roomId}
+                  onValueChange={(v) =>
+                    setForm((prev) => ({ ...prev, roomId: v }))
+                  }
+                  style={styles.input}
+                >
+                  <Picker.Item label=" Chọn phòng" value="" />
+                  {rooms.map((r) => (
+                    <Picker.Item
+                      key={r.id}
+                      label={`${r.name} (${r.location})`}
+                      value={r.id}
+                    />
+                  ))}
+                </Picker>
               </View>
 
-              <Picker
-                selectedValue={form.dayOfWeek}
-                onValueChange={(v) => setForm((p) => ({ ...p, dayOfWeek: v }))}
-                style={styles.input}
+{/* "Hàng ngày" <-> set đủ 7 ngày. Khi off thì chuyển sang mode "chọn ngày cụ thể". */}
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginBottom: 10,
+                }}
               >
-                <Picker.Item label="Thứ 2" value="MONDAY" />
-                <Picker.Item label="Thứ 3" value="TUESDAY" />
-                <Picker.Item label="Thứ 4" value="WEDNESDAY" />
-                <Picker.Item label="Thứ 5" value="THURSDAY" />
-                <Picker.Item label="Thứ 6" value="FRIDAY" />
-                <Picker.Item label="Thứ 7" value="SATURDAY" />
-                <Picker.Item label="Chủ nhật" value="SUNDAY" />
-              </Picker>
-
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowStartPicker(true)}
-              >
-                <Text
-                  style={{ color: form.startTime ? theme.colors.text : "#999" }}
-                >
-                  {form.startTime || "Chọn giờ bắt đầu"}
-                </Text>
-              </TouchableOpacity>
-
-              {showStartPicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="time"
-                  is24Hour
-                  display="default"
-                  onChange={(event, date) => {
-                    setShowStartPicker(false);
-                    if (date) {
-                      setForm((prev) => ({
-                        ...prev,
-                        startTime: formatTime(date),
-                      }));
-                    }
+                <Text style={{ flex: 1, fontWeight: "700" }}>Hàng ngày</Text>
+                <Switch
+                  value={daysOfWeek.length === 7}
+                  onValueChange={(enabled) => {
+                    setDaysOfWeek(enabled ? ALL_DAYS_OF_WEEK : []);
                   }}
                 />
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  marginBottom: 10,
+                }}
+              >
+                {DAYS.map((d) => {
+                  const active = daysOfWeek.includes(d.value);
+
+                  return (
+                    <TouchableOpacity
+                      key={d.value}
+                      onPress={() => toggleDay(d.value)}
+                      style={{
+                        padding: 10,
+                        margin: 4,
+                        borderRadius: 8,
+                        borderWidth: 1,
+                        borderColor: active ? theme.colors.primary : "#ccc",
+                        backgroundColor: active
+                          ? theme.colors.primary
+                          : "transparent",
+                      }}
+
+                    >
+                      <Text
+                        style={{ color: active ? "#fff" : theme.colors.text }}
+                      >
+                        {d.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+              {/* DATE */}
+              {daysOfWeek.length === 0 && (
+                <>
+                  <Text style={{ paddingBottom: 10 }}>Hoặc chọn ngày</Text>
+
+                  {Platform.OS === "web" ? (
+                    <input
+                      type="date"
+                      value={form.scheduleDate}
+                      onChange={(e) => {
+                        const nextDate = e.target.value;
+                        // Chọn ngày cụ thể => đảm bảo không còn chọn "hằng ngày"/các thứ
+                        setDaysOfWeek([]);
+                        setForm((prev) => ({
+                          ...prev,
+                          scheduleDate: nextDate,
+                        }));
+                      }}
+                      style={{
+                        padding: 12,
+                        borderRadius: 10,
+                        border: "1px solid #ccc",
+                        width: "100%",
+                        marginBottom: 10,
+                      }}
+                    />
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.input}
+                    onPress={() => {
+                      // Chọn ngày cụ thể => đảm bảo không còn chọn các thứ
+                      setDaysOfWeek([]);
+                      setShowDatePicker(true);
+                    }}
+                    >
+                      <Text>{form.scheduleDate || "Chọn ngày"}</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
               )}
 
-              <TouchableOpacity
-                style={styles.input}
-                onPress={() => setShowEndPicker(true)}
-              >
-                <Text
-                  style={{ color: form.endTime ? theme.colors.text : "#999" }}
-                >
-                  {form.endTime || "Chọn giờ kết thúc"}
-                </Text>
-              </TouchableOpacity>
-
-              {showEndPicker && (
-                <DateTimePicker
-                  value={new Date()}
-                  mode="time"
-                  is24Hour
-                  display="default"
-                  onChange={(event, date) => {
-                    setShowEndPicker(false);
-                    if (date) {
-                      setForm((prev) => ({
-                        ...prev,
-                        endTime: formatTime(date),
-                      }));
-                    }
+              {Platform.OS === "web" ? (
+                <input
+                  type="time"
+                  value={form.startTime}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      startTime: e.target.value,
+                    }))
+                  }
+                  style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    border: "1px solid #ccc",
+                    width: "100%",
+                    marginBottom: 10,
                   }}
                 />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => setShowStartPicker(true)}
+                  >
+                    <Text>{form.startTime || "Chọn giờ bắt đầu"}</Text>
+                  </TouchableOpacity>
+
+                  {showStartPicker && (
+                    <DateTimePicker
+                      value={new Date()}
+                      mode="time"
+                      is24Hour
+                      onChange={(e, d) => {
+                        setShowStartPicker(false);
+                        if (d) {
+                          setForm((prev) => ({
+                            ...prev,
+                            startTime: formatTime(d),
+                          }));
+                        }
+                      }}
+                    />
+                  )}
+                </>
               )}
 
+              {Platform.OS === "web" ? (
+                <input
+                  type="time"
+                  value={form.endTime}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      endTime: e.target.value,
+                    }))
+                  }
+                  style={{
+                    padding: 12,
+                    borderRadius: 10,
+                    border: "1px solid #ccc",
+                    width: "100%",
+                    marginBottom: 10,
+                  }}
+                />
+              ) : (
+                <>
+                  <TouchableOpacity
+                    style={styles.input}
+                    onPress={() => setShowEndPicker(true)}
+                  >
+                    <Text>{form.endTime || "Chọn giờ kết thúc"}</Text>
+                  </TouchableOpacity>
+
+                  {showEndPicker && (
+                    <DateTimePicker
+                      value={new Date()}
+                      mode="time"
+                      is24Hour
+                      onChange={(e, d) => {
+                        setShowEndPicker(false);
+                        if (d) {
+                          setForm((prev) => ({
+                            ...prev,
+                            endTime: formatTime(d),
+                          }));
+                        }
+                      }}
+                    />
+                  )}
+                </>
+              )}
               <TouchableOpacity style={styles.btn} onPress={submitSchedule}>
                 <Text style={styles.btnText}>
                   {editId ? "Cập nhật" : "Tạo"}
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={{ textAlign: "center", marginTop: 12 }}>Hủy</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setModalVisible(false);
+                  resetFormState();
+                }}
+              >
+                <Text
+                  style={{
+                    textAlign: "center",
+                    marginTop: 12,
+                    fontWeight: "700",
+                    color: theme.colors.textSecondary,
+                  }}
+                >
+                  Hủy
+                </Text>
               </TouchableOpacity>
             </Pressable>
           </Pressable>

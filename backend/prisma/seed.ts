@@ -7,17 +7,6 @@ function random(min: number, max: number) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
-// 👉 map thứ sang tiếng Việt
-const dayMap: Record<string, string> = {
-  MONDAY: 'Thứ 2',
-  TUESDAY: 'Thứ 3',
-  WEDNESDAY: 'Thứ 4',
-  THURSDAY: 'Thứ 5',
-  FRIDAY: 'Thứ 6',
-  SATURDAY: 'Thứ 7',
-  SUNDAY: 'Chủ nhật',
-};
-
 async function main() {
   console.log('🌱 Seeding database...');
 
@@ -192,18 +181,18 @@ async function main() {
     'SUNDAY',
   ];
 
-  for (let i = 0; i < 20; i++) {
-    const day = days[random(0, 6)];
+  // for (let i = 0; i < 20; i++) {
+  //   const day = days[random(0, 6)];
 
-    await prisma.schedule.create({
-      data: {
-        roomId: rooms[random(0, rooms.length - 1)].id,
-        startTime: '08:00',
-        endTime: '18:00',
-        isActive: Math.random() > 0.2,
-      },
-    });
-  }
+  //   await prisma.schedule.create({
+  //     data: {
+  //       roomId: rooms[random(0, rooms.length - 1)].id,
+  //       startTime: '08:00',
+  //       endTime: '18:00',
+  //       isActive: Math.random() > 0.2,
+  //     },
+  //   });
+  // }
 
   console.log('✅ Schedules created');
 

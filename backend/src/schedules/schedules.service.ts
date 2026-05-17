@@ -15,77 +15,36 @@ export class SchedulesService {
   // =========================
   // GET ALL SCHEDULES
   // =========================
-  async findAll(userId: string, role: string) {
-    this.logger.log(`🔍 Find schedules | userId=${userId} | role=${role}`);
-
-    const normalizedRole = (role || '').toUpperCase();
-
-    // ================= ADMIN =================
-    if (normalizedRole === 'ADMIN') {
-      const data = await this.prisma.schedule.findMany({
-        include: { room: true },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      this.logger.log(`✅ ADMIN fetched ${data.length} schedules`);
-      return data;
-    }
-
-    // ================= USER =================
-    // 1. Lấy tất cả room thuộc user
-    const rooms = await this.prisma.room.findMany({
-      where: { userId },
-      select: { id: true },
-    });
-
-    const roomIds = rooms.map((r) => r.id);
-
-    this.logger.log(`🏠 Rooms of user: ${JSON.stringify(roomIds)}`);
-
-    if (roomIds.length === 0) {
-      this.logger.warn('❌ User has no rooms');
-      return [];
-    }
-
-    // 2. Query schedule theo roomIds
-    const data = await this.prisma.schedule.findMany({
-      where: {
-        roomId: {
-          in: roomIds,
-        },
-      },
-      include: {
-        room: true,
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    this.logger.log(`✅ Found ${data.length} schedules`);
-
-    // debug nếu vẫn rỗng
-    if (data.length === 0) {
-      await this.debugCheck(userId, roomIds);
-    }
-
-    return data;
-  }
-
+  async findAll() {
+  return this.prisma.schedule.findMany({
+    include: { room: true },
+    orderBy: { createdAt: 'desc' },
+  });
+}
   // =========================
   // CREATE
   // =========================
-  async create(userId: string, data: any) {
+  async create(data: any) {
     const room = await this.prisma.room.findUnique({
       where: { id: data.roomId },
     });
 
     if (!room) throw new NotFoundException('Room not found');
 
-    if (room.userId !== userId) throw new ForbiddenException('No permission');
+    // Prisma model Schedule yêu cầu daysOfWeek: DayOfWeek[]
+    const daysOfWeek = Array.isArray(data.daysOfWeek) ? data.daysOfWeek : [];
+
+    // scheduleDate là String bắt buộc
+    const scheduleDate =
+      typeof data.scheduleDate === 'string' && data.scheduleDate.trim().length > 0
+        ? data.scheduleDate
+        : new Date().toISOString().slice(0, 10);
 
     return this.prisma.schedule.create({
       data: {
         roomId: data.roomId,
-        scheduleDate: data.scheduleDate,
+        scheduleDate,
+        daysOfWeek,
         startTime: data.startTime,
         endTime: data.endTime,
         isActive: data.isActive ?? true,
@@ -94,49 +53,21 @@ export class SchedulesService {
     });
   }
 
-  async update(id: string, userId: string, data: any) {
-    const schedule = await this.prisma.schedule.findUnique({
-      where: { id },
-      include: { room: true },
-    });
-
-    if (!schedule) throw new NotFoundException();
-
-    if (schedule.room.userId !== userId) throw new ForbiddenException();
-
-    return this.prisma.schedule.update({
-      where: { id },
-      data: {
-        scheduleDate: data.scheduleDate,
-        startTime: data.startTime,
-        endTime: data.endTime,
-        isActive: data.isActive,
-      },
-      include: { room: true },
-    });
-  }
-
+  async update(id: string, data: any) {
+  return this.prisma.schedule.update({
+    where: { id },
+    data,
+    include: { room: true },
+  });
+}
   // =========================
   // DELETE
   // =========================
-  async remove(id: string, userId: string) {
-    const schedule = await this.prisma.schedule.findUnique({
-      where: { id },
-      include: { room: true },
-    });
-
-    if (!schedule) {
-      throw new NotFoundException('Lịch trình không tồn tại');
-    }
-
-    if (schedule.room.userId !== userId) {
-      throw new ForbiddenException('Không có quyền xóa');
-    }
-
-    return this.prisma.schedule.delete({
-      where: { id },
-    });
-  }
+  async remove(id: string) {
+  return this.prisma.schedule.delete({
+    where: { id },
+  });
+}
 
   // =========================
   // DEBUG
