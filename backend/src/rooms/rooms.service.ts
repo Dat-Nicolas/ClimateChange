@@ -49,9 +49,32 @@ export class RoomsService {
       where: { id },
       select: {
         id: true,
-        name: true,
         location: true,
-        streamKey: true, 
+        currentPeople: true,
+        currentTemperature: true,
+        streamKey: true,
+        minPeopleToTurnOn: true,
+        minTempToTurnOn: true,
+        roomTemperature: true,
+        peoplePerAC: true,
+        autoMode: true,
+        startTime: true,
+        endTime: true,
+        acAutoControlEnabled: true,
+        userId: true,
+        name: true,
+        airConditioners: {
+          select: {
+            id: true,
+            brandId: true,
+            roomId: true,
+            status: true,
+            currentTemp: true,
+            mode: true,
+            name: true,
+          },
+        },
+
       },
     });
   }
