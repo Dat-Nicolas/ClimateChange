@@ -6,7 +6,7 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const isProduction = process.env.NODE_ENV === 'production';
+  const isProduction = false;
   const port = process.env.PORT || 3000;
   const urlProduction = 'https://climatechange-9ftw.onrender.com';
 

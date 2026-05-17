@@ -1,222 +1,340 @@
-import { PrismaClient, User, Room, Brand } from '@prisma/client';
+import { PrismaClient, Role, ACMode, ACStatus, ButtonCode } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-function random(min: number, max: number) {
-  return Math.floor(Math.random() * (max - min + 1)) + min;
-}
+const FUNIKI_BUTTONS = [
+  {
+    buttonName: ButtonCode.POWER_OFF,
+    irCode: '0xB27BE0',
+    irName: 'COOLIX',
+  },
+
+  {
+    buttonName: ButtonCode.TEMP_17,
+    irCode: '0xB2BF00',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_18,
+    irCode: '0xB2BF10',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_19,
+    irCode: '0xB2BF30',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_20,
+    irCode: '0xB2BF20',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_21,
+    irCode: '0xB2BF60',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_22,
+    irCode: '0xB2BF70',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_23,
+    irCode: '0xB2BF50',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_24,
+    irCode: '0xB2BF40',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_25,
+    irCode: '0xB2BFC0',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_26,
+    irCode: '0xB2BFD0',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_27,
+    irCode: '0xB2BF90',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_28,
+    irCode: '0xB2BF80',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_29,
+    irCode: '0xB2BFA0',
+    irName: 'COOLIX',
+  },
+  {
+    buttonName: ButtonCode.TEMP_30,
+    irCode: '0xB2BFB0',
+    irName: 'COOLIX',
+  },
+];
 
 async function main() {
-  console.log('🌱 Seeding database...');
+  console.log('🌱 START SEEDING...');
 
-  // ================= CLEAR =================
+  // =========================================
+  // CLEAR DATABASE
+  // =========================================
+
   await prisma.attendanceLog.deleteMany();
   await prisma.schedule.deleteMany();
   await prisma.activityLog.deleteMany();
   await prisma.sensorLog.deleteMany();
   await prisma.airConditioner.deleteMany();
+  await prisma.iRButton.deleteMany();
   await prisma.room.deleteMany();
   await prisma.brand.deleteMany();
   await prisma.user.deleteMany();
 
-  // ================= USERS =================
-  const password = await bcrypt.hash('123456', 10);
-  const users: User[] = [];
+  console.log('🗑 Database cleared');
 
-  for (let i = 1; i <= 10; i++) {
-    const user = await prisma.user.create({
-      data: {
-        email: `user${i}@mail.com`,
-        password,
-        fullName: `User ${i}`,
-        role: i === 1 ? 'ADMIN' : 'USER',
-      },
-    });
-    users.push(user);
-  }
+  // =========================================
+  // USER
+  // =========================================
 
-  console.log('✅ Users created');
+  const hashedPassword = await bcrypt.hash('123456', 10);
 
-  // ================= BRANDS =================
-  const brandNames = ['Daikin', 'LG', 'Samsung', 'Panasonic', 'Toshiba'];
-  const brands: Brand[] = [];
+  const user = await prisma.user.create({
+    data: {
+      email: 'admin@mail.com',
+      password: hashedPassword,
+      fullName: 'Admin',
+      role: Role.ADMIN,
+    },
+  });
 
-  for (let i = 0; i < 10; i++) {
-    const brand = await prisma.brand.create({
-      data: {
-        name: `${brandNames[i % brandNames.length]} ${i + 1}`,
-        irProtocol: 'NEC',
-      },
-    });
-    brands.push(brand);
-  }
+  console.log('✅ User created');
+
+  // =========================================
+  // BRANDS
+  // =========================================
+
+  const funikiBrand = await prisma.brand.create({
+    data: {
+      name: 'Funiki',
+      irProtocol: 'NEC',
+    },
+  });
+
+  const sunhouseBrand = await prisma.brand.create({
+    data: {
+      name: 'Sunhouse',
+      irProtocol: 'NEC',
+    },
+  });
 
   console.log('✅ Brands created');
 
-  // ================= ROOMS + SENSOR =================
-  const rooms: Room[] = [];
+  // =========================================
+  // IR BUTTONS - FUNIKI
+  // =========================================
 
-  for (let floor = 1; floor <= 5; floor++) {
-    for (let roomNum = 1; roomNum <= 5; roomNum++) {
-      const roomName = `A${floor}0${roomNum}`;
+  await prisma.iRButton.createMany({
+    data: FUNIKI_BUTTONS.map((item) => ({
+      brandId: funikiBrand.id,
+      buttonName: item.buttonName,
+      irCode: item.irCode,
+      irName: item.irName,
+      description: 'Funiki IR Button',
+    })),
+  });
 
-      const room = await prisma.room.create({
-        data: {
-          name: roomName,
-          location: `Floor ${floor}`,
-          currentPeople: random(0, 40),
-          currentTemperature: 25,
-          peoplePerAC: 10,
-          minPeopleToTurnOn: 5,
-          autoMode: true,
-          startTime: '08:00',
-          endTime: '18:00',
-          userId: users[random(0, users.length - 1)].id,
-        },
-      });
+  // =========================================
+  // IR BUTTONS - SUNHOUSE
+  // =========================================
+  // Tạm clone code Funiki cho Sunhouse
+  // Sau này thay mã thật
 
-      rooms.push(room);
+  await prisma.iRButton.createMany({
+    data: FUNIKI_BUTTONS.map((item) => ({
+      brandId: sunhouseBrand.id,
+      buttonName: item.buttonName,
+      irCode: item.irCode,
+      irName: item.irName,
+      description: 'Sunhouse IR Button',
+    })),
+  });
 
-      let latestTemp = 25;
+  console.log('✅ IR Buttons created');
 
-      const tempScenario = [24, 25, 26, 27, 28];
+  // =========================================
+  // ROOM
+  // =========================================
 
+  const room = await prisma.room.create({
+    data: {
+      name: 'A401',
+      location: 'Floor 1',
+      currentPeople: 12,
+      currentTemperature: 27,
+      roomTemperature: 28,
+      streamKey: 'hnaa401',
 
-      await prisma.sensorLog.create({
-        data: {
-          roomId: room.id,
-          peopleCount: random(0, 50),
-          temperature: tempScenario[0],
-          timestamp: new Date(Date.now() - 4 * 60000),
-        },
-      });
+      minPeopleToTurnOn: 5,
+      minTempToTurnOn: 28,
 
-      await prisma.sensorLog.create({
-        data: {
-          roomId: room.id,
-          peopleCount: random(0, 50),
-          temperature: tempScenario[1],
-          timestamp: new Date(Date.now() - 3 * 60000),
-        },
-      });
+      peoplePerAC: 10,
 
-      await prisma.sensorLog.create({
-        data: {
-          roomId: room.id,
-          peopleCount: random(0, 50),
-          temperature: tempScenario[2],
-          timestamp: new Date(Date.now() - 2 * 60000),
-        },
-      });
+      autoMode: true,
+      acAutoControlEnabled: true,
 
-      await prisma.sensorLog.create({
-        data: {
-          roomId: room.id,
-          peopleCount: random(0, 50),
-          temperature: tempScenario[3],
-          timestamp: new Date(Date.now() - 1 * 60000),
-        },
-      });
+      startTime: '08:00',
+      endTime: '18:00',
 
-      await prisma.sensorLog.create({
-        data: {
-          roomId: room.id,
-          peopleCount: random(0, 50),
-          temperature: tempScenario[4],
-          timestamp: new Date(),
-        },
-      });
+      userId: user.id,
+    },
+  });
 
-      await prisma.room.update({
-        where: { id: room.id },
-        data: { currentTemperature: latestTemp },
-      });
-    }
-  }
+  console.log('✅ Room created');
 
-  console.log('✅ Rooms + SensorLogs synced');
+  // =========================================
+  // SENSOR LOGS
+  // =========================================
 
-  // ================= AIR CONDITIONERS =================
-  for (let i = 0; i < rooms.length; i++) {
-    await prisma.airConditioner.create({
-      data: {
-        name: `AC ${i + 1}`,
-        brandId: brands[i % brands.length].id,
-        roomId: rooms[i].id,
-        status: Math.random() > 0.5 ? 'ON' : 'OFF',
-        currentTemp: random(22, 28),
-        mode: ['COOL', 'AUTO', 'DRY'][random(0, 2)] as any,
+  await prisma.sensorLog.createMany({
+    data: [
+      {
+        roomId: room.id,
+        peopleCount: 10,
+        temperature: 26,
+        timestamp: new Date(Date.now() - 4 * 60000),
       },
-    });
-  }
-
-  console.log('✅ AirConditioners created');
-
-  // ================= ACTIVITY LOG =================
-  const actions = ['AC_ON', 'AC_OFF', 'TEMP_CHANGE', 'MODE_CHANGE'];
-
-  for (let i = 0; i < 20; i++) {
-    await prisma.activityLog.create({
-      data: {
-        roomId: rooms[random(0, rooms.length - 1)].id,
-        userId: users[random(0, users.length - 1)].id,
-        action: actions[random(0, actions.length - 1)],
-        details: { note: 'Auto generated' },
+      {
+        roomId: room.id,
+        peopleCount: 12,
+        temperature: 27,
+        timestamp: new Date(Date.now() - 3 * 60000),
+      },
+      {
+        roomId: room.id,
+        peopleCount: 14,
+        temperature: 28,
+        timestamp: new Date(Date.now() - 2 * 60000),
+      },
+      {
+        roomId: room.id,
+        peopleCount: 15,
+        temperature: 29,
+        timestamp: new Date(Date.now() - 1 * 60000),
+      },
+      {
+        roomId: room.id,
+        peopleCount: 16,
+        temperature: 30,
         timestamp: new Date(),
       },
-    });
-  }
+    ],
+  });
 
-  console.log('✅ Activity logs created');
+  console.log('✅ Sensor logs created');
 
-  // ================= SCHEDULE =================
-  const days = [
-    'MONDAY',
-    'TUESDAY',
-    'WEDNESDAY',
-    'THURSDAY',
-    'FRIDAY',
-    'SATURDAY',
-    'SUNDAY',
-  ];
+  // =========================================
+  // AIR CONDITIONERS
+  // =========================================
 
-  // for (let i = 0; i < 20; i++) {
-  //   const day = days[random(0, 6)];
+  await prisma.airConditioner.create({
+    data: {
+      name: 'Funiki AC',
+      brandId: funikiBrand.id,
+      roomId: room.id,
 
-  //   await prisma.schedule.create({
-  //     data: {
-  //       roomId: rooms[random(0, rooms.length - 1)].id,
-  //       startTime: '08:00',
-  //       endTime: '18:00',
-  //       isActive: Math.random() > 0.2,
-  //     },
-  //   });
-  // }
+      status: ACStatus.ON,
+      currentTemp: 26,
+      mode: ACMode.COOL,
+    },
+  });
 
-  console.log('✅ Schedules created');
+  await prisma.airConditioner.create({
+    data: {
+      name: 'Sunhouse AC',
+      brandId: sunhouseBrand.id,
+      roomId: room.id,
 
-  // ================= ATTENDANCE =================
-  for (let i = 0; i < 20; i++) {
-    await prisma.attendanceLog.create({
-      data: {
-        roomId: rooms[random(0, rooms.length - 1)].id,
-        className: `Class ${String.fromCharCode(65 + random(0, 5))}`,
-        period: random(1, 10),
-        count: random(10, 60),
-        imageUrl: `https://picsum.photos/200?random=${i}`,
+      status: ACStatus.OFF,
+      currentTemp: 28,
+      mode: ACMode.AUTO,
+    },
+  });
+
+  console.log('✅ Air conditioners created');
+
+  // =========================================
+  // ACTIVITY LOG
+  // =========================================
+
+  await prisma.activityLog.create({
+    data: {
+      roomId: room.id,
+      userId: user.id,
+      action: 'SYSTEM_INIT',
+      details: {
+        message: 'Initial seed data',
       },
-    });
-  }
+    },
+  });
 
-  console.log('✅ Attendance logs created');
+  console.log('✅ Activity log created');
 
-  console.log('✨ SEED COMPLETED SUCCESSFULLY');
+  // =========================================
+  // SCHEDULE
+  // =========================================
+
+  // await prisma.schedule.create({
+  //   data: {
+  //     roomId: room.id,
+  //     scheduleDate: '2026-05-17',
+  //     daysOfWeek: [
+  //       'MONDAY',
+  //       'TUESDAY',
+  //       'WEDNESDAY',
+  //       'THURSDAY',
+  //       'FRIDAY',
+  //     ],
+
+  //     startTime: '08:00',
+  //     endTime: '18:00',
+
+  //     isActive: true,
+  //   },
+  // });
+
+  console.log('✅ Schedule created');
+
+  // =========================================
+  // ATTENDANCE LOG
+  // =========================================
+
+  await prisma.attendanceLog.create({
+    data: {
+      roomId: room.id,
+      className: 'CNTT K17',
+      period: 1,
+      count: 35,
+      imageUrl: 'https://picsum.photos/400/300',
+    },
+  });
+
+  console.log('✅ Attendance log created');
+
+  console.log('✨ SEED COMPLETED');
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seed error:', e);
+  .catch((error) => {
+    console.error('❌ SEED ERROR:', error);
     process.exit(1);
   })
   .finally(async () => {
