@@ -16,9 +16,14 @@ export class IrButtonsService {
     });
   }
   async createIRButton(dto: CreateIRButtonDto) {
+    const brandId = dto.brandId?.trim();
+
+    const brand = await this.prisma.brand.findUnique({ where: { id: brandId } });
+    if (!brand) throw new NotFoundException('Brand not found');
+
     const button = await this.prisma.iRButton.create({
       data: {
-        brandId: dto.brandId,
+        brandId,
         buttonName: dto.buttonName,
         irCode: dto.irCode.trim(),
         irName: dto.irName.trim(),
