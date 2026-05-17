@@ -902,7 +902,17 @@ const RoomDetailScreen = () => {
     );
   }
 
-  if (!room || !currentAc) return null;
+  if (!room || !currentAc) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <Text style={{ color: theme.colors.text, fontWeight: "700" }}>
+            Không có dữ liệu điều hòa để hiển thị
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -1002,9 +1012,6 @@ const RoomDetailScreen = () => {
               <Text style={styles.metricTitle}>VỊ TRÍ</Text>
             </View>
 
-            <Text style={styles.metricValue} numberOfLines={2}>
-              {room.location}
-            </Text>
           </View>
 
           <View style={styles.metricCard}>
