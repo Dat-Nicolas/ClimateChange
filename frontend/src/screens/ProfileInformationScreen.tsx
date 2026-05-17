@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator
 import Header from '../components/common/Header';
 import { useTheme } from '../theme/ThemeProvider';
 import { Ionicons } from '@expo/vector-icons';
+import SafeScreen from '../components/common/SafeScreen';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type StoredUser = {
@@ -153,7 +154,7 @@ const ProfileInformationScreen = () => {
   const workUnit = '—';
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <Header showBack title="Thông tin hồ sơ" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         {isLoading ? (
@@ -219,7 +220,7 @@ const ProfileInformationScreen = () => {
           </>
         )}
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 };
 

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
+import SafeScreen from '../components/common/SafeScreen';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -48,62 +49,68 @@ const LoginScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Smart AC</Text>
-          <Text style={styles.subtitle}>Hệ thống Thông minh Khí hậu</Text>
-        </View>
-
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập email của bạn"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor={theme.colors.outline}
-            />
+    <SafeScreen style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Smart AC</Text>
+            <Text style={styles.subtitle}>
+              Hệ thống Thông minh Khí hậu
+            </Text>
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập mật khẩu"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholderTextColor={theme.colors.outline}
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập email của bạn"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Mật khẩu</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập mật khẩu"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <Button
+              title="Đăng nhập"
+              onPress={handleLogin}
+              loading={isLoading}
+              style={styles.loginButton}
             />
+
+            <TouchableOpacity style={styles.forgotPassword}>
+              <Text style={styles.forgotPasswordText}>
+                Quên mật khẩu?
+              </Text>
+            </TouchableOpacity>
           </View>
 
-          <Button
-            title="Đăng nhập"
-            onPress={handleLogin}
-            loading={isLoading}
-            style={styles.loginButton}
-          />
-
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Chưa có tài khoản? </Text>
-          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-            <Text style={styles.registerText}>Đăng ký ngay</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Chưa có tài khoản? </Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+              <Text style={styles.registerText}>Đăng ký ngay</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeScreen>
   );
 };
 

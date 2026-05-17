@@ -10,9 +10,10 @@ import {
   TouchableOpacity,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   Dimensions,
 } from "react-native";
+
+import SafeScreen from "../components/common/SafeScreen";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -756,7 +757,7 @@ const DashboardScreen = () => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeScreen style={styles.container}>
       <View style={styles.topBar}>
         <View style={styles.brandWrap}>
           <View style={styles.logoDot}>
@@ -819,11 +820,8 @@ const DashboardScreen = () => {
         windowSize={5}
         removeClippedSubviews={true}
       />
-    </SafeAreaView>
+    </SafeScreen>
   );
 };
 
 export default DashboardScreen;
-function useAuth() {
-  throw new Error("Function not implemented.");
-}

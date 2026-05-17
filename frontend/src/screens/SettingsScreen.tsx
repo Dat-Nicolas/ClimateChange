@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useTheme } from '../theme/ThemeProvider';
 import Header from '../components/common/Header';
+import SafeScreen from '../components/common/SafeScreen';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -148,7 +149,7 @@ const SettingsScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <Header title="Cài đặt" />
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
         <View style={styles.section}>
@@ -217,7 +218,7 @@ const SettingsScreen = () => {
 
         <Text style={styles.versionText}>Phiên bản 1.0.0</Text>
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 };
 

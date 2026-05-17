@@ -11,6 +11,7 @@ import {
 import { useNavigation } from "@react-navigation/native";
 import Header from "../components/common/Header";
 import { Ionicons } from "@expo/vector-icons";
+import SafeScreen from "../components/common/SafeScreen";
 import { logService } from "../services/api";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -244,7 +245,7 @@ const ActivityLogScreen = () => {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <Header title="Nhật ký hoạt động"  />
 
       <FlatList
@@ -268,7 +269,7 @@ const ActivityLogScreen = () => {
         windowSize={5}
         removeClippedSubviews={true}
       />
-    </View>
+    </SafeScreen>
   );
 };
 

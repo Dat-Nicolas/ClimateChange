@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { theme } from '../theme';
 import Button from '../components/common/Button';
+import SafeScreen from '../components/common/SafeScreen';
 import { useNavigation } from '@react-navigation/native';
 import { authService } from '../services/api';
 
@@ -38,7 +39,7 @@ const RegisterScreen = () => {
     try {
       await authService.register({ fullName, email, password });
       Alert.alert('Thành công', 'Đăng ký tài khoản thành công! Vui lòng đăng nhập.', [
-        { text: 'OK', onPress: () => navigation.goBack() }
+        { text: 'OK', onPress: () => navigation.goBack() },
       ]);
     } catch (error: any) {
       Alert.alert('Lỗi đăng ký', error.message || 'Không thể đăng ký tài khoản lúc này');
@@ -48,81 +49,83 @@ const RegisterScreen = () => {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Tạo tài khoản</Text>
-          <Text style={styles.subtitle}>Bắt đầu quản lý hệ thống điều hòa thông minh</Text>
-        </View>
+    <SafeScreen style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <ScrollView contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Tạo tài khoản</Text>
+            <Text style={styles.subtitle}>Bắt đầu quản lý hệ thống điều hòa thông minh</Text>
+          </View>
 
-        <View style={styles.form}>
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Họ và tên</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập họ và tên"
-              value={fullName}
-              onChangeText={setFullName}
-              placeholderTextColor={theme.colors.outline}
+          <View style={styles.form}>
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Họ và tên</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập họ và tên"
+                value={fullName}
+                onChangeText={setFullName}
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập email"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Mật khẩu</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập mật khẩu"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Xác nhận mật khẩu</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập lại mật khẩu"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
+                placeholderTextColor={theme.colors.outline}
+              />
+            </View>
+
+            <Button
+              title="Đăng ký"
+              onPress={handleRegister}
+              loading={isLoading}
+              style={styles.registerButton}
             />
           </View>
 
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập email"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              placeholderTextColor={theme.colors.outline}
-            />
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>Đã có tài khoản? </Text>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Text style={styles.loginText}>Đăng nhập</Text>
+            </TouchableOpacity>
           </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập mật khẩu"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-              placeholderTextColor={theme.colors.outline}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Xác nhận mật khẩu</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập lại mật khẩu"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              placeholderTextColor={theme.colors.outline}
-            />
-          </View>
-
-          <Button
-            title="Đăng ký"
-            onPress={handleRegister}
-            loading={isLoading}
-            style={styles.registerButton}
-          />
-        </View>
-
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>Đã có tài khoản? </Text>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Text style={styles.loginText}>Đăng nhập</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeScreen>
   );
 };
 

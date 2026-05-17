@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Header from '../components/common/Header';
+import SafeScreen from '../components/common/SafeScreen';
 import { useTheme } from '../theme/ThemeProvider';
 
 const SecurityPasswordScreen = () => {
@@ -187,7 +188,7 @@ const SecurityPasswordScreen = () => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeScreen style={styles.container}>
       <Header
         showBack
         title="Bảo mật & Mật khẩu"
@@ -320,7 +321,7 @@ const SecurityPasswordScreen = () => {
           <Text style={styles.statusText}>Tài khoản của bạn an toàn</Text>
         </View>
       </ScrollView>
-    </View>
+    </SafeScreen>
   );
 };
 

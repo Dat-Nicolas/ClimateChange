@@ -17,6 +17,7 @@ import {
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useTheme } from "../theme/ThemeProvider";
 import Header from "../components/common/Header";
+import SafeScreen from "../components/common/SafeScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { Picker } from "@react-native-picker/picker";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -466,7 +467,7 @@ const toggleDay = (day: string) => {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
+    <SafeScreen style={{ backgroundColor: theme.colors.background }}>
       <Header
         title="Lịch"
         rightElement={
@@ -747,7 +748,7 @@ const toggleDay = (day: string) => {
           </Pressable>
         </KeyboardAvoidingView>
       </Modal>
-    </View>
+    </SafeScreen>
   );
 };
 

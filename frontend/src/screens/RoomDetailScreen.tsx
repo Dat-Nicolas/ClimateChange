@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,12 +7,14 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   Modal,
   TextInput,
   KeyboardAvoidingView,
   Platform,
+  RefreshControl,
 } from "react-native";
+
+import SafeScreen from "../components/common/SafeScreen";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
@@ -912,26 +914,26 @@ const RoomDetailScreen = () => {
 
   if (isLoading && !room) {
     return (
-      <SafeAreaView style={styles.loadingContainer}>
+      <SafeScreen style={styles.loadingContainer}>
         <ActivityIndicator size="large" color={theme.colors.success} />
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
   if (!room || !currentAc) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeScreen style={styles.container}>
         <View style={styles.loadingContainer}>
           <Text style={{ color: theme.colors.text, fontWeight: "700" }}>
             Không có dữ liệu điều hòa để hiển thị
           </Text>
         </View>
-      </SafeAreaView>
+      </SafeScreen>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeScreen style={styles.container}>
       <View style={styles.topBar}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -943,10 +945,17 @@ const RoomDetailScreen = () => {
         <Text style={styles.topTitle}>Phòng {room.name}</Text>
       </View>
 
+
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isLoading}
+            onRefresh={fetchRoomDetail}
+          />
+        }
       >
         <Text style={styles.sectionTitle}>Camera Trực Tiếp</Text>
 
@@ -1705,7 +1714,7 @@ const RoomDetailScreen = () => {
           </View>
         </KeyboardAvoidingView>
       </Modal>
-    </SafeAreaView>
+    </SafeScreen>
   );
 };
 
