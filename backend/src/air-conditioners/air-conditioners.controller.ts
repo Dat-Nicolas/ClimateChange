@@ -75,7 +75,6 @@ export class AirConditionersController {
   update(
     @Param('id') id: string,
     @Body() data: any,
-    @Request() req,
   ) {
     return this.acService.update(
       id,

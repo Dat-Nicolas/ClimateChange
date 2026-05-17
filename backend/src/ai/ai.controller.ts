@@ -6,6 +6,7 @@ import { ButtonACCommand } from 'src/mqtt/ac/dto/ac-control.dto';
 import { ButtonCode } from 'src/enums/btn-code.enum';
 import { AirConditionersService } from 'src/air-conditioners/air-conditioners.service';
 import { RoomsService } from 'src/rooms/rooms.service';
+import { getTemperatureName } from 'src/utils';
 
 @Controller('ai')
 export class AiController {
@@ -40,11 +41,12 @@ export class AiController {
     // ============================
     // AUTO COMMAND
     // ============================
-
+    const acTemp = ac?.currentTemp;
+    const btnCode = getTemperatureName(acTemp!);
     const room = await this.roomsService.findOne(roomId);
     const targetButton =
       count > room?.minPeopleToTurnOn! || count > 5
-        ? ButtonCode.TEMP_25
+        ? btnCode
         : ButtonCode.POWER_OFF;
     const selectedIrButton = ac!.brand.irButtons.find(
       (btn) => btn.buttonName === targetButton,

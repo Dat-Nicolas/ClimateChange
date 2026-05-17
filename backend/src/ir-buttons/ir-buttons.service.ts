@@ -62,11 +62,5 @@ export class IrButtonsService {
   }
 
   // ====================== HELPER ======================
-  private async getIRCommand(brandId: string, buttonName: ButtonCode) {
-    return this.prisma.iRButton.findUnique({
-      where: {
-        brandId_buttonName: { brandId, buttonName },
-      },
-    });
-  }
+
 }

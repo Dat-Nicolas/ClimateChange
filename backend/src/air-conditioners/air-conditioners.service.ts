@@ -2,20 +2,19 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  Inject,
+  forwardRef,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
-import {
-  CreateIRButtonDto,
-  UpdateIRButtonDto,
-} from '../ir-buttons/dto/create-ir-button.dto';
 import { ButtonCode } from 'src/enums/btn-code.enum';
 
 @Injectable()
 export class AirConditionersService {
   constructor(
     private prisma: PrismaService,
+    @Inject(forwardRef(() => RoomsService))
     private roomsService: RoomsService,
     private activityLog: ActivityLogService,
   ) {}
@@ -35,19 +34,6 @@ export class AirConditionersService {
       },
     });
   }
-  // ====================== VALIDATION ======================
-  private async validateAcAccess(acId: string, userId: string, role: string) {
-    const ac = await this.prisma.airConditioner.findUnique({
-      where: { id: acId },
-      include: { room: true, brand: true },
-    });
-
-    if (!ac) throw new NotFoundException('Air conditioner not found');
-
-    await this.roomsService.validateRoomAccess(ac.roomId, userId, role);
-    return ac;
-  }
-
   // ====================== AC CRUD ======================
   async findAll() {
     return this.prisma.airConditioner.findMany({
@@ -124,13 +110,14 @@ export class AirConditionersService {
   }
 
   async remove(id: string, userId: string, role: string) {
-    const ac = await this.validateAcAccess(id, userId, role);
+    const ac = await this.prisma.airConditioner.findUnique({
+      where: { id },
+      include: { room: true },
+    });
+
+    if (!ac) throw new NotFoundException('Air conditioner not found');
 
     await this.prisma.airConditioner.delete({ where: { id } });
-
-    await this.activityLog.log(ac.roomId, userId, 'DELETE_AC', {
-      acName: ac.name,
-    });
     return { message: 'Air conditioner deleted successfully' };
   }
 }
