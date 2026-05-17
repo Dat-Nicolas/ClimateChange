@@ -4,9 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import {
-  IRButtonSendResult,
-} from './dto/ir-button-response.dto';
+import { IRButtonSendResult } from './dto/ir-button-response.dto';
 import { AcGateway } from 'src/mqtt/ac/ac.gateway';
 import { SendIRButtonDto } from './dto/send-ir-button.dto';
 import { ButtonACCommand } from 'src/mqtt/ac/dto/ac-control.dto';
@@ -165,7 +163,7 @@ export class RoomsService {
 
     const command: ButtonACCommand = {
       buttonName: dto.buttonName,
-      irCode: btnCode,
+      irCode: selectedIrButton.irCode,
       brand: ac!.brand.name,
       irName: selectedIrButton.irName,
     };
