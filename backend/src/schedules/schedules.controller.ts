@@ -1,27 +1,32 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query , Request } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-
 @Controller('schedules')
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
   @Get()
-  findAll(@Request() req) {
-    return this.schedulesService.findAll(req.user.userId, req.user.role);
-  }
+findAll(@Request() req) {
+  const userId = req?.user?.userId;
+  const role = req?.user?.role;
 
-  @Post()
-  create(@Request() req, @Body() data: any) {
-    return this.schedulesService.create(req.user.userId, data);
-  }
+  return this.schedulesService.findAll(userId, role);
+}
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Request() req, @Body() data: any) {
-    return this.schedulesService.update(id, req.user.userId, data);
-  }
+@Post()
+create(@Request() req, @Body() data: any) {
+  const userId = req?.user?.userId;
+  return this.schedulesService.create(userId, data);
+}
 
-  @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
-    return this.schedulesService.remove(id, req.user.userId);
-  }
+@Patch(':id')
+update(@Param('id') id: string, @Request() req, @Body() data: any) {
+  const userId = req?.user?.userId;
+  return this.schedulesService.update(id, userId, data);
+}
+
+@Delete(':id')
+remove(@Param('id') id: string, @Request() req) {
+  const userId = req?.user?.userId;
+  return this.schedulesService.remove(id, userId);
+}
 }
