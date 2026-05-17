@@ -9,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { RoomsService } from '../rooms/rooms.service';
 import { ActivityLogService } from '../activity-log/activity-log.service';
 import { ButtonCode } from 'src/enums/btn-code.enum';
+import { getTemperatureName } from 'src/utils';
+import { ButtonACCommand } from 'src/mqtt/ac/dto/ac-control.dto';
 
 @Injectable()
 export class AirConditionersService {
@@ -105,6 +107,29 @@ export class AirConditionersService {
       },
       include: { brand: true, room: true },
     });
+
+    // send mqtt command if status or temperature changed
+    if (data.status || data.temperature !== undefined) {
+      const btnCode = getTemperatureName(updated.currentTemp);
+      const targetButton = data.status === 'ON' ? btnCode : ButtonCode.POWER_OFF;
+      // const selectedIrButton = updated.brand.irButtons.find(
+      //   (btn) => btn.buttonName === targetButton,
+      // );
+      // if (selectedIrButton) {
+        // const command: ButtonACCommand = {
+        //   buttonName: targetButton,
+        //   irCode: selectedIrButton.irCode,
+        //   brand: updated.brand.name,
+        //   irName: selectedIrButton.irName,
+        // };
+        
+        this.roomsService.sendIRButton(updated.roomId, {
+          buttonName: targetButton,
+          airConditionerId: updated.id,
+        });
+      // }
+    }
+
 
     return updated;
   }

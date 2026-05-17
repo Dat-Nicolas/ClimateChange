@@ -166,7 +166,7 @@ export class RoomsService {
 
     const command: ButtonACCommand = {
       buttonName: dto.buttonName,
-      irCode: selectedIrButton.irCode,
+      irCode: btnCode,
       brand: ac!.brand.name,
       irName: selectedIrButton.irName,
     };
