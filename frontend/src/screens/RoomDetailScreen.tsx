@@ -19,6 +19,7 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../navigation/AppNavigator";
 import { roomService, acService } from "../services/api";
 import { useTheme } from "../theme/ThemeProvider";
+import WebView from "react-native-webview";
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "RoomDetail">;
 type RoomDetailRouteProp = RouteProp<RootStackParamList, "RoomDetail">;
@@ -59,6 +60,7 @@ type RoomDetailData = {
   location: string;
   currentTemperature: number;
   currentPeople: number;
+  streamKey: string;
   minPeopleToTurnOn: number;
   minTempToTurnOn: number;
   roomTemperature: number | null;
@@ -95,6 +97,8 @@ const RoomDetailScreen = () => {
   const [showMinPeopleSheet, setShowMinPeopleSheet] = useState(false);
   const [newMinPeople, setNewMinPeople] = useState<string>("6");
   const [isUpdatingMinPeople, setIsUpdatingMinPeople] = useState(false);
+
+  const [isCameraFullscreen, setIsCameraFullscreen] = useState(false);
 
   const currentAc = room?.airConditioners?.[selectedAcIndex] ?? null;
 
@@ -187,7 +191,7 @@ const RoomDetailScreen = () => {
       },
 
       cameraCard: {
-        height: 210,
+        height: 300,
         borderRadius: 14,
         borderWidth: 1,
         borderColor: border,
@@ -196,6 +200,73 @@ const RoomDetailScreen = () => {
         overflow: "hidden",
         justifyContent: "space-between",
         padding: 12,
+      },
+
+      cameraStream: {
+        flex: 1,
+        width: "100%",
+      },
+
+      cameraFullscreenBtn: {
+        position: "absolute",
+        top: 10,
+        right: 10,
+        zIndex: 10,
+        backgroundColor: "rgba(0,0,0,0.45)",
+        borderRadius: 999,
+        paddingVertical: 8,
+        paddingHorizontal: 10,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.35)",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 6,
+      },
+
+      cameraFullscreenBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 12,
+      },
+
+      fullscreenContainer: {
+        flex: 1,
+        backgroundColor: "black",
+      },
+
+      fullscreenCloseBtn: {
+        position: "absolute",
+        top: 30,
+        left: 18,
+        zIndex: 20,
+        backgroundColor: "rgba(0,0,0,0.45)",
+        borderRadius: 999,
+        paddingVertical: 8,
+        paddingHorizontal: 12,
+        borderWidth: 1,
+        borderColor: "rgba(255,255,255,0.35)",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 8,
+      },
+
+      fullscreenCloseBtnText: {
+        color: "#fff",
+        fontWeight: "800",
+        fontSize: 13,
+      },
+
+      noCameraContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: isDark ? "#27303A" : "#415161",
+      },
+
+      noCameraText: {
+        marginTop: 8,
+        color: "#fff",
+        fontWeight: "700",
       },
 
       recBadge: {
@@ -592,6 +663,7 @@ const RoomDetailScreen = () => {
         name: data?.name ?? roomName,
         location: data?.location ?? "Không xác định",
         currentTemperature: Number(data?.currentTemperature ?? 24),
+        streamKey: data?.streamKey ?? "",
         currentPeople: Number(data?.currentPeople ?? 0),
         minPeopleToTurnOn: Number(data?.minPeopleToTurnOn ?? 6),
         minTempToTurnOn: Number(data?.minTempToTurnOn ?? 25),
@@ -852,55 +924,72 @@ const RoomDetailScreen = () => {
       >
         <Text style={styles.sectionTitle}>Camera Trực Tiếp</Text>
 
-         <View style={styles.cameraCard}>
-      {room.streamKey ? (
-        <WebView
-          source={{
-            uri: `https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`,
-          }}
-          style={styles.cameraStream}
-          javaScriptEnabled
-          domStorageEnabled
-          allowsInlineMediaPlayback
-          mediaPlaybackRequiresUserAction={false}
-          scrollEnabled={false}
-        />
-      ) : (
-        <View style={styles.noCameraContainer}>
-          <Ionicons
-            name="videocam-off"
-            size={40}
-            color="#999"
-          />
+        <View style={styles.cameraCard}>
+          <TouchableOpacity
+            style={styles.cameraFullscreenBtn}
+            onPress={() => setIsCameraFullscreen(true)}
+          >
+            <Ionicons name="expand" size={16} color="#fff" />
+            <Text style={styles.cameraFullscreenBtnText}>Toàn màn hình</Text>
+          </TouchableOpacity>
 
-          <Text style={styles.noCameraText}>
-            Chưa cấu hình camera
+          {room.streamKey ? (
+            Platform.OS === "web" ? (
+              // RN Web: WebView không hỗ trợ -> dùng iframe
+              <View style={styles.cameraStream}>
+                <iframe
+                  src={`https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`}
+                  style={{ width: "100%", height: "100%", border: "0" }}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  referrerPolicy="no-referrer"
+                />
+              </View>
+            ) : (
+              // iOS/Android: dùng WebView
+              <WebView
+                source={{
+                  uri: `https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`,
+                }}
+                style={styles.cameraStream}
+                javaScriptEnabled
+                domStorageEnabled
+                allowsInlineMediaPlayback
+                mediaPlaybackRequiresUserAction={false}
+                scrollEnabled={false}
+              />
+            )
+          ) : (
+            <View style={styles.noCameraContainer}>
+              <Ionicons name="videocam-off" size={40} color="#999" />
+
+              <Text style={styles.noCameraText}>
+                Chưa cấu hình camera
+              </Text>
+            </View>
+          )}
+
+          {/* REC */}
+          <View style={styles.recBadge}>
+            <View style={styles.recDot} />
+            <Text style={styles.recText}>REC</Text>
+          </View>
+
+          {/* TIME */}
+          <Text style={styles.timeText}>
+            {new Date().toLocaleString("vi-VN")}
           </Text>
+
+          {/* FOOTER */}
+          <View style={styles.cameraFooter}>
+            <Text style={styles.cameraMeta}>
+              {room.streamKey || "NO CAM"}
+            </Text>
+
+            <Text style={styles.cameraMeta}>
+              Phòng {room.name}
+            </Text>
+          </View>
         </View>
-      )}
-
-      {/* REC */}
-      <View style={styles.recBadge}>
-        <View style={styles.recDot} />
-        <Text style={styles.recText}>REC</Text>
-      </View>
-
-      {/* TIME */}
-      <Text style={styles.timeText}>
-        {new Date().toLocaleString("vi-VN")}
-      </Text>
-
-      {/* FOOTER */}
-      <View style={styles.cameraFooter}>
-        <Text style={styles.cameraMeta}>
-          {room.streamKey || "NO CAM"}
-        </Text>
-
-        <Text style={styles.cameraMeta}>
-          Phòng {room.name}
-        </Text>
-      </View>
-    </View>
 
         <View style={styles.metricsRow}>
           <View style={styles.metricCard}>
@@ -915,10 +1004,6 @@ const RoomDetailScreen = () => {
 
             <Text style={styles.metricValue} numberOfLines={2}>
               {room.location}
-            </Text>
-
-            <Text style={styles.metricSub}>
-              ID: {room.id.substring(0, 8)}...
             </Text>
           </View>
 
@@ -1297,6 +1382,55 @@ const RoomDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={isCameraFullscreen}
+        transparent={false}
+        animationType="slide"
+        onRequestClose={() => setIsCameraFullscreen(false)}
+      >
+        <View style={styles.fullscreenContainer}>
+          <TouchableOpacity
+            style={styles.fullscreenCloseBtn}
+            onPress={() => setIsCameraFullscreen(false)}
+          >
+            <Ionicons name="close" size={18} color="#fff" />
+            <Text style={styles.fullscreenCloseBtnText}>Thoát</Text>
+          </TouchableOpacity>
+
+          {room.streamKey ? (
+            Platform.OS === "web" ? (
+              <View style={{ flex: 1 }}>
+                <iframe
+                  src={`https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`}
+                  style={{ width: "100%", height: "100%", border: "0" }}
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  referrerPolicy="no-referrer"
+                />
+              </View>
+            ) : (
+              <WebView
+                source={{
+                  uri: `https://cam.stream-camera-iot.site/stream.html?src=${room.streamKey}`,
+                }}
+                style={{ flex: 1 }}
+                javaScriptEnabled
+                domStorageEnabled
+                allowsInlineMediaPlayback
+                mediaPlaybackRequiresUserAction={false}
+                scrollEnabled={false}
+              />
+            )
+          ) : (
+            <View style={styles.noCameraContainer}>
+              <Ionicons name="videocam-off" size={40} color="#999" />
+              <Text style={styles.noCameraText}>
+                Chưa cấu hình camera
+              </Text>
+            </View>
+          )}
+        </View>
+      </Modal>
 
       <Modal
         visible={showMinPeopleSheet}
