@@ -82,7 +82,7 @@ export class RoomsController {
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() data: any, @Request() req) {
-    return this.roomsService.update(id, data, req.user?.userId, req.user?.role);
+    return this.roomsService.update(id, data);
   }
 
   @Delete(':id')

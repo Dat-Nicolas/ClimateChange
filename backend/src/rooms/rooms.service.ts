@@ -67,8 +67,7 @@ export class RoomsService {
     return room;
   }
 
-  async update(id: string, data: any, userId: string, role: string) {
-    await this.validateRoomAccess(id, userId, role);
+  async update(id: string, data: any) {
     const room = await this.prisma.room.update({
       where: { id },
       data,
