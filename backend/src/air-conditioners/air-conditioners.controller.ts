@@ -12,14 +12,15 @@ import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
+  ApiOkResponse,
+  ApiCreatedResponse,
+  ApiNotFoundResponse,
+  ApiBadRequestResponse,
 } from '@nestjs/swagger';
 
 import { AirConditionersService } from './air-conditioners.service';
 
-import {
-  CreateIRButtonDto,
-  UpdateIRButtonDto,
-} from '../ir-buttons/dto/create-ir-button.dto';
+import { AirConditionerResponseDto } from './dto/air-conditioner-response.dto';
 
 @ApiTags('Air Conditioners')
 @ApiBearerAuth()
@@ -38,6 +39,7 @@ export class AirConditionersController {
   @ApiOperation({
     summary: 'Lấy danh sách điều hòa',
   })
+  @ApiOkResponse({ type: AirConditionerResponseDto, isArray: true })
   findAll(@Request() req) {
     return this.acService.findAll();
   }
@@ -46,6 +48,9 @@ export class AirConditionersController {
   @ApiOperation({
     summary: 'Tạo điều hòa',
   })
+  @ApiCreatedResponse({ type: AirConditionerResponseDto })
+  @ApiBadRequestResponse({ description: 'Invalid input' })
+  @ApiNotFoundResponse({ description: 'Room not found' })
   create(
     @Body() data: any,
     @Request() req,
@@ -61,6 +66,8 @@ export class AirConditionersController {
   @ApiOperation({
     summary: 'Lấy chi tiết điều hòa',
   })
+  @ApiOkResponse({ type: AirConditionerResponseDto })
+  @ApiNotFoundResponse({ description: 'Air conditioner not found' })
   findOne(
     @Param('id') id: string,
     @Request() req,
@@ -72,6 +79,8 @@ export class AirConditionersController {
   @ApiOperation({
     summary: 'Cập nhật điều hòa',
   })
+  @ApiOkResponse({ type: AirConditionerResponseDto })
+  @ApiNotFoundResponse({ description: 'Air conditioner not found' })
   update(
     @Param('id') id: string,
     @Body() data: any,
@@ -86,6 +95,16 @@ export class AirConditionersController {
   @ApiOperation({
     summary: 'Xóa điều hòa',
   })
+  @ApiOkResponse({
+    description: 'Successful deletion',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Air conditioner deleted successfully' },
+      },
+    },
+  })
+  @ApiNotFoundResponse({ description: 'Air conditioner not found' })
   remove(
     @Param('id') id: string,
     @Request() req,

@@ -70,7 +70,7 @@ async function bootstrap() {
 
   app.enableCors({
     origin: isProduction 
-      ? ['https://climatechange-9ftw.onrender.com', 'https://climatechange.app' , 'https://climatechange-1.onrender.com',]
+      ? ['https://climatechange-9ftw.onrender.com', 'https://climatechange.app' , 'https://climatechange-1.onrender.com','http://localhost:8081']
       : '*',
     credentials: true,
   });

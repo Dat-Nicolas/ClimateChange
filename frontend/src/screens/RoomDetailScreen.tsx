@@ -8,6 +8,10 @@ import {
   ActivityIndicator,
   Alert,
   SafeAreaView,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -120,6 +124,10 @@ const RoomDetailScreen = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAcIndex, setSelectedAcIndex] = useState(0);
+  const [isAdjustingTemp, setIsAdjustingTemp] = useState(false);
+  const [showMinPeopleSheet, setShowMinPeopleSheet] = useState(false);
+  const [newMinPeople, setNewMinPeople] = useState<string>("6");
+  const [isUpdatingMinPeople, setIsUpdatingMinPeople] = useState(false);
 
   const currentAc = room?.airConditioners?.[selectedAcIndex] ?? null;
 
@@ -655,6 +663,8 @@ const RoomDetailScreen = () => {
     if (!room) return;
 
     try {
+      setIsAdjustingTemp(true);
+
       // Nếu điều chỉnh nhiệt độ, tập hợp tất cả AC
       const isTemperatureAdjustment = typeof command.temperature === "number";
 
@@ -667,6 +677,7 @@ const RoomDetailScreen = () => {
           "Không được phép",
           `Cần ít nhất ${room.minPeopleToTurnOn} người để điều chỉnh nhiệt độ. Hiện tại có ${room.currentPeople} người.`,
         );
+        setIsAdjustingTemp(false);
         return;
       }
 
@@ -707,6 +718,39 @@ const RoomDetailScreen = () => {
       });
     } catch (error: any) {
       Alert.alert("Thông báo", error?.message || "Không thể điều khiển AC");
+    } finally {
+      setIsAdjustingTemp(false);
+    }
+  };
+
+  const handleUpdateMinPeople = async () => {
+    if (!room) return;
+
+    const minPeopleNum = parseInt(newMinPeople, 10);
+
+    if (isNaN(minPeopleNum) || minPeopleNum < 1) {
+      Alert.alert("Lỗi", "Vui lòng nhập số người hợp lệ (≥ 1)");
+      return;
+    }
+
+    try {
+      setIsUpdatingMinPeople(true);
+
+      await roomService.updateRoom(room.id, {
+        minPeopleToTurnOn: minPeopleNum,
+      });
+
+      setRoom({
+        ...room,
+        minPeopleToTurnOn: minPeopleNum,
+      });
+
+      Alert.alert("Thành công", "Cập nhật số người tối thiểu thành công");
+      setShowMinPeopleSheet(false);
+    } catch (error: any) {
+      Alert.alert("Lỗi", error?.message || "Không thể cập nhật");
+    } finally {
+      setIsUpdatingMinPeople(false);
     }
   };
 
@@ -799,7 +843,13 @@ const RoomDetailScreen = () => {
             </Text>
           </View>
 
-          <View style={styles.metricCard}>
+          <TouchableOpacity
+            style={styles.metricCard}
+            onPress={() => {
+              setNewMinPeople(room.minPeopleToTurnOn.toString());
+              setShowMinPeopleSheet(true);
+            }}
+          >
             <View style={styles.metricHead}>
               <Ionicons
                 name="people-outline"
@@ -814,7 +864,31 @@ const RoomDetailScreen = () => {
             <Text style={styles.metricSub}>
               Tối thiểu: {room.minPeopleToTurnOn}
             </Text>
-          </View>
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                marginTop: 6,
+                gap: 4,
+              }}
+            >
+              <MaterialCommunityIcons
+                name="pencil"
+                size={12}
+                color={theme.colors.textSecondary}
+              />
+              <Text
+                style={{
+                  fontSize: 9,
+                  color: theme.colors.textSecondary,
+                  fontWeight: "600",
+                }}
+              >
+                Chỉnh sửa
+              </Text>
+            </View>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.controlCard}>
@@ -874,20 +948,29 @@ const RoomDetailScreen = () => {
               style={[
                 styles.adjustBtn,
                 styles.adjustTop,
-                room.currentPeople < 6 && { opacity: 0.5 },
+                (room.currentPeople < 6 || isAdjustingTemp) && { opacity: 0.5 },
               ]}
               onPress={() =>
                 handleControl({
                   temperature: Math.min(currentAc.currentTemp + 1, 30),
                 })
               }
-              disabled={room.currentPeople < 6}
+              disabled={room.currentPeople < 6 || isAdjustingTemp}
             >
-              <Ionicons
-                name="add"
-                size={18}
-                color={room.currentPeople < 6 ? "#999" : theme.colors.success}
-              />
+              {isAdjustingTemp ? (
+                <ActivityIndicator
+                  size="small"
+                  color={
+                    room.currentPeople < 6 ? "#999" : theme.colors.success
+                  }
+                />
+              ) : (
+                <Ionicons
+                  name="add"
+                  size={18}
+                  color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+                />
+              )}
             </TouchableOpacity>
 
             <View style={styles.ringOuter}>
@@ -902,20 +985,29 @@ const RoomDetailScreen = () => {
               style={[
                 styles.adjustBtn,
                 styles.adjustBottom,
-                room.currentPeople < 6 && { opacity: 0.5 },
+                (room.currentPeople < 6 || isAdjustingTemp) && { opacity: 0.5 },
               ]}
               onPress={() =>
                 handleControl({
                   temperature: Math.max(currentAc.currentTemp - 1, 16),
                 })
               }
-              disabled={room.currentPeople < 6}
+              disabled={room.currentPeople < 6 || isAdjustingTemp}
             >
-              <Ionicons
-                name="remove"
-                size={18}
-                color={room.currentPeople < 6 ? "#999" : theme.colors.success}
-              />
+              {isAdjustingTemp ? (
+                <ActivityIndicator
+                  size="small"
+                  color={
+                    room.currentPeople < 6 ? "#999" : theme.colors.success
+                  }
+                />
+              ) : (
+                <Ionicons
+                  name="remove"
+                  size={18}
+                  color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+                />
+              )}
             </TouchableOpacity>
           </View>
 
@@ -1024,6 +1116,155 @@ const RoomDetailScreen = () => {
           )}
         </View>
       </ScrollView>
+
+      <Modal
+        visible={showMinPeopleSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowMinPeopleSheet(false)}
+      >
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          style={{ flex: 1 }}
+        >
+          <View
+            style={{
+              flex: 1,
+              justifyContent: "flex-end",
+              backgroundColor: "rgba(0, 0, 0, 0.5)",
+            }}
+          >
+            <View
+              style={{
+                backgroundColor: theme.colors.surface,
+                borderTopLeftRadius: 20,
+                borderTopRightRadius: 20,
+                padding: 20,
+                paddingBottom: 30,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 20,
+                }}
+              >
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    color: theme.colors.text,
+                  }}
+                >
+                  Cập Nhật Số Người Tối Thiểu
+                </Text>
+
+                <TouchableOpacity
+                  onPress={() => setShowMinPeopleSheet(false)}
+                  disabled={isUpdatingMinPeople}
+                >
+                  <Ionicons
+                    name="close"
+                    size={24}
+                    color={theme.colors.text}
+                  />
+                </TouchableOpacity>
+              </View>
+
+              <Text
+                style={{
+                  fontSize: 13,
+                  color: theme.colors.textSecondary,
+                  marginBottom: 16,
+                }}
+              >
+                Nhập số người tối thiểu để tự động bật điều hòa
+              </Text>
+
+              <View
+                style={{
+                  borderWidth: 1,
+                  borderColor: theme.colors.outlineVariant,
+                  borderRadius: 12,
+                  paddingHorizontal: 16,
+                  marginBottom: 16,
+                  backgroundColor: theme.colors.background,
+                }}
+              >
+                <TextInput
+                  style={{
+                    fontSize: 16,
+                    color: theme.colors.text,
+                    paddingVertical: 12,
+                  }}
+                  placeholder="Nhập số người"
+                  placeholderTextColor={theme.colors.textSecondary}
+                  keyboardType="number-pad"
+                  value={newMinPeople}
+                  onChangeText={setNewMinPeople}
+                  editable={!isUpdatingMinPeople}
+                />
+              </View>
+
+              <View style={{ flexDirection: "row", gap: 12 }}>
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    borderWidth: 1,
+                    borderColor: theme.colors.outlineVariant,
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                  onPress={() => setShowMinPeopleSheet(false)}
+                  disabled={isUpdatingMinPeople}
+                >
+                  <Text
+                    style={{
+                      color: theme.colors.text,
+                      fontWeight: "600",
+                      fontSize: 14,
+                    }}
+                  >
+                    Hủy
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={{
+                    flex: 1,
+                    paddingVertical: 12,
+                    borderRadius: 12,
+                    backgroundColor: theme.colors.success,
+                    alignItems: "center",
+                    justifyContent: "center",
+                    opacity: isUpdatingMinPeople ? 0.7 : 1,
+                  }}
+                  onPress={handleUpdateMinPeople}
+                  disabled={isUpdatingMinPeople}
+                >
+                  {isUpdatingMinPeople ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Text
+                      style={{
+                        color: "#fff",
+                        fontWeight: "600",
+                        fontSize: 14,
+                      }}
+                    >
+                      Cập Nhật
+                    </Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 };

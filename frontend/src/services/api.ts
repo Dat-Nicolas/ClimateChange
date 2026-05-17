@@ -81,6 +81,8 @@ export const roomService = {
     ];
     return api.get(`/rooms/${roomId}?${queryParts.join("&")}`);
   },
+  updateRoom: (roomId: string, data: any) =>
+    api.patch(`/rooms/${roomId}`, data),
 };
 
 export const acService = {

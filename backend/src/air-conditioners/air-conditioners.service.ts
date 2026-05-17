@@ -96,6 +96,13 @@ export class AirConditionersService {
   }
 
   async update(id: string, data: any) {
+    const ac = await this.prisma.airConditioner.findUnique({
+      where: { id },
+      include: { room: true },
+    });
+
+    if (!ac) throw new NotFoundException('Air conditioner not found');
+
     const updated = await this.prisma.airConditioner.update({
       where: { id },
       data: {
