@@ -163,7 +163,6 @@ const ActivityLogDetailScreen = () => {
           <Text style={styles.item}>
             Min - Max: {log.room?.minTemp}°C - {log.room?.maxTemp}°C
           </Text>
-          </Text>
           <Text style={styles.item}>
             Auto Mode: {log.room?.autoMode ? "Bật" : "Tắt"}
           </Text>

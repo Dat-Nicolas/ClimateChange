@@ -19,30 +19,72 @@ import { useTheme } from "../theme/ThemeProvider";
 type NavigationProp = StackNavigationProp<RootStackParamList, "RoomDetail">;
 type RoomDetailRouteProp = RouteProp<RootStackParamList, "RoomDetail">;
 
+type BrandItem = {
+  id: string;
+  name: string;
+  irProtocol: string;
+  createdAt: string;
+};
+
 type AcItem = {
   id: string;
   name: string;
-  status: "ON" | "OFF";
+  status: string;
   currentTemp: number;
-  mode: "COOL" | "DRY" | "FAN" | "AUTO" | "HEAT";
+  mode: string;
+  brandId: string;
+  roomId: string;
+  brand: BrandItem;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type ScheduleItem = {
+  id: string;
+  roomId: string;
+  startTime: string;
+  endTime: string;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 type RoomDetailData = {
   id: string;
   name: string;
-  location?: string;
+  location: string;
   currentTemperature: number;
   currentPeople: number;
+  minPeopleToTurnOn: number;
+  minTempToTurnOn: number;
+  roomTemperature: number | null;
+  peoplePerAC: number;
   autoMode: boolean;
+  startTime: string;
+  endTime: string;
+  acAutoControlEnabled: boolean;
+  userId: string;
   airConditioners: AcItem[];
+  schedules: ScheduleItem[];
+  createdAt: string;
+  updatedAt: string;
 };
 
 const fallbackRoom = (roomId: string, roomName: string): RoomDetailData => ({
   id: roomId,
   name: roomName,
+  location: "Không xác định",
   currentTemperature: 24,
   currentPeople: 12,
+  minPeopleToTurnOn: 6,
+  minTempToTurnOn: 25,
+  roomTemperature: null,
+  peoplePerAC: 10,
   autoMode: true,
+  startTime: "08:00",
+  endTime: "18:00",
+  acAutoControlEnabled: true,
+  userId: "",
   airConditioners: [
     {
       id: `${roomId}-ac-1`,
@@ -50,36 +92,16 @@ const fallbackRoom = (roomId: string, roomName: string): RoomDetailData => ({
       status: "ON",
       currentTemp: 22,
       mode: "COOL",
-    },
-    {
-      id: `${roomId}-ac-2`,
-      name: "AC #2",
-      status: "ON",
-      currentTemp: 22,
-      mode: "COOL",
-    },
-    {
-      id: `${roomId}-ac-3`,
-      name: "AC #3",
-      status: "OFF",
-      currentTemp: 25,
-      mode: "AUTO",
-    },
-    {
-      id: `${roomId}-ac-4`,
-      name: "AC #4",
-      status: "OFF",
-      currentTemp: 25,
-      mode: "AUTO",
-    },
-    {
-      id: `${roomId}-ac-5`,
-      name: "AC #5",
-      status: "OFF",
-      currentTemp: 25,
-      mode: "AUTO",
+      brandId: "",
+      roomId: roomId,
+      brand: { id: "", name: "Unknown", irProtocol: "", createdAt: "" },
+      createdAt: "",
+      updatedAt: "",
     },
   ],
+  schedules: [],
+  createdAt: new Date().toISOString(),
+  updatedAt: new Date().toISOString(),
 });
 
 const RoomDetailScreen = () => {
@@ -106,33 +128,17 @@ const RoomDetailScreen = () => {
     [room],
   );
 
-  // ✅ mỗi 10 người = 1 AC
+  // ✅ Nếu số người >= minPeopleToTurnOn thì bật tất cả AC
   const requiredAcCount = useMemo(() => {
     if (!room) return 0;
-    return Math.max(1, Math.ceil(room.currentPeople / 10));
-  }, [room]);
-
-  // ✅ auto bật/tắt theo số người
-  useEffect(() => {
-    if (!room) return;
-
-    const updated = room.airConditioners.map((ac, index) => ({
-      ...ac,
-      status: index < requiredAcCount ? "ON" : "OFF",
-    }));
-
-    setRoom((prev) => {
-      if (!prev) return null;
-
-      return {
-        ...prev,
-        airConditioners: prev.airConditioners.map((ac) => ({
-          ...ac,
-          status: ac.status === "ON" ? "OFF" : "ON",
-        })),
-      };
-    });
-  }, [room?.currentPeople]);
+    return room.currentPeople >= room.minPeopleToTurnOn
+      ? room.airConditioners.length
+      : 0;
+  }, [
+    room?.currentPeople,
+    room?.minPeopleToTurnOn,
+    room?.airConditioners.length,
+  ]);
 
   const styles = useMemo(() => {
     const isDark = themeMode === "dark";
@@ -403,8 +409,8 @@ const RoomDetailScreen = () => {
         borderColor: border,
         justifyContent: "center",
         alignItems: "center",
-        zIndex: 10, 
-        elevation: 10, 
+        zIndex: 10,
+        elevation: 10,
       },
 
       adjustTop: {
@@ -533,12 +539,50 @@ const RoomDetailScreen = () => {
       const mapped: RoomDetailData = {
         id: data?.id ?? roomId,
         name: data?.name ?? roomName,
+        location: data?.location ?? "Không xác định",
         currentTemperature: Number(data?.currentTemperature ?? 24),
         currentPeople: Number(data?.currentPeople ?? 0),
+        minPeopleToTurnOn: Number(data?.minPeopleToTurnOn ?? 6),
+        minTempToTurnOn: Number(data?.minTempToTurnOn ?? 25),
+        roomTemperature: data?.roomTemperature ?? null,
+        peoplePerAC: Number(data?.peoplePerAC ?? 10),
         autoMode: Boolean(data?.autoMode ?? true),
+        startTime: data?.startTime ?? "08:00",
+        endTime: data?.endTime ?? "18:00",
+        acAutoControlEnabled: Boolean(data?.acAutoControlEnabled ?? true),
+        userId: data?.userId ?? userId ?? "",
         airConditioners: Array.isArray(data?.airConditioners)
-          ? data.airConditioners
-          : fallbackRoom(roomId, roomName).airConditioners,
+          ? data.airConditioners.map((ac: any) => ({
+              id: ac.id,
+              name: ac.name,
+              status: ac.status,
+              currentTemp: Number(ac.currentTemp),
+              mode: ac.mode,
+              brandId: ac.brandId,
+              roomId: ac.roomId,
+              brand: ac.brand ?? {
+                id: "",
+                name: "Unknown",
+                irProtocol: "",
+                createdAt: "",
+              },
+              createdAt: ac.createdAt,
+              updatedAt: ac.updatedAt,
+            }))
+          : [],
+        schedules: Array.isArray(data?.schedules)
+          ? data.schedules.map((s: any) => ({
+              id: s.id,
+              roomId: s.roomId,
+              startTime: s.startTime,
+              endTime: s.endTime,
+              isActive: Boolean(s.isActive),
+              createdAt: s.createdAt,
+              updatedAt: s.updatedAt,
+            }))
+          : [],
+        createdAt: data?.createdAt ?? new Date().toISOString(),
+        updatedAt: data?.updatedAt ?? new Date().toISOString(),
       };
 
       setRoom(mapped);
@@ -550,6 +594,50 @@ const RoomDetailScreen = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!room || !room.acAutoControlEnabled) return;
+
+    const shouldAllBeOn = room.currentPeople >= room.minPeopleToTurnOn;
+
+    const newStatus: "ON" | "OFF" = shouldAllBeOn ? "ON" : "OFF";
+
+    const needUpdate = room.airConditioners.some(
+      (ac) => ac.status !== newStatus,
+    );
+
+    if (!needUpdate) return;
+
+    const updateACs = async () => {
+      try {
+        await Promise.all(
+          room.airConditioners.map((ac) =>
+            acService.controlAC(ac.id, {
+              status: newStatus,
+              temperature: ac.currentTemp,
+              mode: ac.mode,
+            }),
+          ),
+        );
+
+        setRoom((prev) =>
+          prev
+            ? {
+                ...prev,
+                airConditioners: prev.airConditioners.map((ac) => ({
+                  ...ac,
+                  status: newStatus,
+                })),
+              }
+            : prev,
+        );
+      } catch (err) {
+        console.error("Auto control error:", err);
+      }
+    };
+
+    updateACs();
+  }, [room?.currentPeople, room?.minPeopleToTurnOn]);
 
   useEffect(() => {
     if (roomId) {
@@ -564,28 +652,58 @@ const RoomDetailScreen = () => {
       temperature: number;
     }>,
   ) => {
-    if (!room || !currentAc) return;
+    if (!room) return;
 
     try {
-      await acService.controlAC(currentAc.id, command);
+      // Nếu điều chỉnh nhiệt độ, tập hợp tất cả AC
+      const isTemperatureAdjustment = typeof command.temperature === "number";
 
-      const updated = room.airConditioners.map((ac, idx) =>
-        idx === selectedAcIndex
-          ? {
-              ...ac,
-              status: command.status ?? ac.status,
-              mode: command.mode ?? ac.mode,
-              currentTemp:
-                typeof command.temperature === "number"
-                  ? command.temperature
-                  : ac.currentTemp,
-            }
-          : ac,
+      // ✅ Kiểm tra nếu điều chỉnh nhiệt độ cần >= ${room.minPeopleToTurnOn} người
+      if (
+        isTemperatureAdjustment &&
+        room.currentPeople < room.minPeopleToTurnOn
+      ) {
+        Alert.alert(
+          "Không được phép",
+          `Cần ít nhất ${room.minPeopleToTurnOn} người để điều chỉnh nhiệt độ. Hiện tại có ${room.currentPeople} người.`,
+        );
+        return;
+      }
+
+      // Tự động bật/tắt dựa trên số người
+      const shouldAllBeOn = room.currentPeople >= room.minPeopleToTurnOn;
+      const autoStatus = room.acAutoControlEnabled
+        ? shouldAllBeOn
+          ? "ON"
+          : "OFF"
+        : command.status;
+
+      // Cập nhật tất cả AC với trạng thái auto + nhiệt độ mới
+      const acUpdates = room.airConditioners.map((ac) => ({
+        ...ac,
+        status: autoStatus,
+        currentTemp: isTemperatureAdjustment
+          ? command.temperature
+          : ac.currentTemp,
+        mode: command.mode ?? ac.mode,
+      }));
+
+      // Gửi request cập nhật cho từng AC
+      await Promise.all(
+        room.airConditioners.map((ac, idx) =>
+          acService.controlAC(ac.id, {
+            status: autoStatus,
+            temperature: isTemperatureAdjustment
+              ? command.temperature
+              : ac.currentTemp,
+            mode: command.mode ?? ac.mode,
+          }),
+        ),
       );
 
       setRoom({
         ...room,
-        airConditioners: updated,
+        airConditioners: acUpdates,
       });
     } catch (error: any) {
       Alert.alert("Thông báo", error?.message || "Không thể điều khiển AC");
@@ -613,23 +731,6 @@ const RoomDetailScreen = () => {
         </TouchableOpacity>
 
         <Text style={styles.topTitle}>Phòng {room.name}</Text>
-
-        <View style={styles.rightActions}>
-          <TouchableOpacity style={styles.iconBtn}>
-            <Ionicons
-              name="notifications-outline"
-              size={18}
-              color={theme.colors.text}
-            />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.avatarBtn}
-            onPress={() => navigation.navigate("SettingsStack")}
-          >
-            <Ionicons name="person" size={13} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
       </View>
 
       <ScrollView
@@ -645,7 +746,9 @@ const RoomDetailScreen = () => {
             <Text style={styles.recText}>REC</Text>
           </View>
 
-          <Text style={styles.timeText}>2026-05-16 10:32:45</Text>
+          <Text style={styles.timeText}>
+            {new Date().toLocaleString("vi-VN")}
+          </Text>
 
           <View style={styles.playButton}>
             <Ionicons name="play" size={28} color="#fff" />
@@ -653,11 +756,30 @@ const RoomDetailScreen = () => {
 
           <View style={styles.cameraFooter}>
             <Text style={styles.cameraMeta}>CAM 01</Text>
-            <Text style={styles.cameraMeta}>14 MB/s</Text>
+            <Text style={styles.cameraMeta}>Phòng {room.name}</Text>
           </View>
         </View>
 
         <View style={styles.metricsRow}>
+          <View style={styles.metricCard}>
+            <View style={styles.metricHead}>
+              <MaterialCommunityIcons
+                name="map-marker"
+                size={14}
+                color={theme.colors.textSecondary}
+              />
+              <Text style={styles.metricTitle}>VỊ TRÍ</Text>
+            </View>
+
+            <Text style={styles.metricValue} numberOfLines={2}>
+              {room.location}
+            </Text>
+
+            <Text style={styles.metricSub}>
+              ID: {room.id.substring(0, 8)}...
+            </Text>
+          </View>
+
           <View style={styles.metricCard}>
             <View style={styles.metricHead}>
               <MaterialCommunityIcons
@@ -669,10 +791,12 @@ const RoomDetailScreen = () => {
             </View>
 
             <Text style={styles.metricValue}>
-              {room.currentTemperature.toFixed(0)}°C
+              {room.currentTemperature.toFixed(1)}°C
             </Text>
 
-            <Text style={styles.metricSub}>Ổn định - Có xu hướng giảm</Text>
+            <Text style={styles.metricSub}>
+              Mục tiêu: {room.minTempToTurnOn}°C
+            </Text>
           </View>
 
           <View style={styles.metricCard}>
@@ -687,7 +811,9 @@ const RoomDetailScreen = () => {
 
             <Text style={styles.metricValue}>{room.currentPeople}</Text>
 
-            <Text style={styles.metricSub}>Mức tải: Bình thường</Text>
+            <Text style={styles.metricSub}>
+              Tối thiểu: {room.minPeopleToTurnOn}
+            </Text>
           </View>
         </View>
 
@@ -709,16 +835,59 @@ const RoomDetailScreen = () => {
             </View>
           </View>
 
+          <Text
+            style={[styles.acSummaryLabel, { marginTop: 12, marginBottom: 8 }]}
+          >
+            Danh sách điều hòa ({room.airConditioners.length})
+          </Text>
+
+          <View style={styles.acPillRow}>
+            {room.airConditioners.map((ac, index) => (
+              <TouchableOpacity
+                key={ac.id}
+                style={[
+                  styles.acPill,
+                  ac.status === "ON"
+                    ? styles.acPillRunning
+                    : styles.acPillStopped,
+                  selectedAcIndex === index && styles.acPillSelected,
+                ]}
+                onPress={() => setSelectedAcIndex(index)}
+              >
+                <Text
+                  style={{
+                    fontSize: 11,
+                    fontWeight: "700",
+                    color: ac.status === "ON" ? "#000" : theme.colors.text,
+                    textAlign: "center",
+                  }}
+                  numberOfLines={1}
+                >
+                  {ac.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
           <View style={styles.ringWrap}>
             <TouchableOpacity
-              style={[styles.adjustBtn, styles.adjustTop]}
+              style={[
+                styles.adjustBtn,
+                styles.adjustTop,
+                room.currentPeople < 6 && { opacity: 0.5 },
+              ]}
               onPress={() =>
                 handleControl({
                   temperature: Math.min(currentAc.currentTemp + 1, 30),
                 })
               }
+              disabled={room.currentPeople < 6}
             >
-              <Ionicons name="add" size={18} color={theme.colors.success} />
+              <Ionicons
+                name="add"
+                size={18}
+                color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+              />
             </TouchableOpacity>
 
             <View style={styles.ringOuter}>
@@ -730,50 +899,36 @@ const RoomDetailScreen = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.adjustBtn, styles.adjustBottom]}
+              style={[
+                styles.adjustBtn,
+                styles.adjustBottom,
+                room.currentPeople < 6 && { opacity: 0.5 },
+              ]}
               onPress={() =>
                 handleControl({
                   temperature: Math.max(currentAc.currentTemp - 1, 16),
                 })
               }
+              disabled={room.currentPeople < 6}
             >
-              <Ionicons name="remove" size={18} color={theme.colors.success} />
+              <Ionicons
+                name="remove"
+                size={18}
+                color={room.currentPeople < 6 ? "#999" : theme.colors.success}
+              />
             </TouchableOpacity>
           </View>
 
           <View style={styles.acSummaryRow}>
-            <Text style={styles.acSummaryLabel}>Dàn / AC hoạt động</Text>
-
-            <Text style={styles.acSummaryValue}>
-              {activeAcCount}/{requiredAcCount}
-            </Text>
+            <Text style={styles.acSummaryLabel}>Thương hiệu</Text>
+            <Text style={styles.acSummaryValue}>{currentAc.brand.name}</Text>
           </View>
 
-          <View style={styles.acPillRow}>
-            {room.airConditioners.map((ac, idx) => {
-              const selected = idx === selectedAcIndex;
-              const running = ac.status === "ON";
-
-              return (
-                <TouchableOpacity
-                  key={ac.id}
-                  onPress={() => setSelectedAcIndex(idx)}
-                  style={[
-                    styles.acPill,
-                    running ? styles.acPillRunning : styles.acPillStopped,
-                    selected && styles.acPillSelected,
-                  ]}
-                >
-                  <MaterialCommunityIcons
-                    name={running ? "snowflake" : "fan-off"}
-                    size={16}
-                    color={
-                      running ? theme.colors.success : theme.colors.outline
-                    }
-                  />
-                </TouchableOpacity>
-              );
-            })}
+          <View style={styles.acSummaryRow}>
+            <Text style={styles.acSummaryLabel}>Giao thức IR</Text>
+            <Text style={styles.acSummaryValue}>
+              {currentAc.brand.irProtocol}
+            </Text>
           </View>
         </View>
 
@@ -782,35 +937,91 @@ const RoomDetailScreen = () => {
 
           <View style={styles.ruleRow}>
             <View style={styles.ruleBadge}>
-              <Text style={styles.ruleBadgeText}>10</Text>
+              <MaterialCommunityIcons
+                name="account-multiple"
+                size={14}
+                color={theme.colors.success}
+              />
             </View>
 
             <View style={styles.ruleInfo}>
-              <Text style={styles.ruleMain}>Mỗi 10 người</Text>
+              <Text style={styles.ruleMain}>
+                Tối thiểu {room.minPeopleToTurnOn} người
+              </Text>
 
-              <Text style={styles.ruleSub}>Tăng thêm 1 điều hòa</Text>
+              <Text style={styles.ruleSub}>Bật tất cả điều hòa</Text>
             </View>
 
             <Ionicons
-              name="checkmark-circle"
+              name={
+                room.acAutoControlEnabled ? "checkmark-circle" : "close-circle"
+              }
               size={18}
-              color={theme.colors.success}
+              color={
+                room.acAutoControlEnabled
+                  ? theme.colors.success
+                  : theme.colors.textSecondary
+              }
             />
           </View>
 
           <View style={styles.ruleRow}>
             <View style={styles.ruleBadge}>
-              <Text style={styles.ruleBadgeText}>{requiredAcCount}</Text>
+              <Text
+                style={[styles.ruleBadgeText, { color: theme.colors.success }]}
+              >
+                {requiredAcCount}
+              </Text>
             </View>
 
             <View style={styles.ruleInfo}>
               <Text style={styles.ruleMain}>AC cần thiết hiện tại</Text>
 
-              <Text style={styles.ruleSub}>Tự động tính theo số người</Text>
+              <Text style={styles.ruleSub}>
+                AC chạy: {activeAcCount}/{room.airConditioners.length}
+              </Text>
             </View>
 
             <Ionicons name="flash" size={18} color={theme.colors.success} />
           </View>
+
+          {room.schedules.length > 0 && (
+            <View style={styles.ruleRow}>
+              <View style={styles.ruleBadge}>
+                <MaterialCommunityIcons
+                  name="clock-outline"
+                  size={14}
+                  color={theme.colors.success}
+                />
+              </View>
+
+              <View style={styles.ruleInfo}>
+                <Text style={styles.ruleMain}>
+                  {room.schedules[0].startTime} - {room.schedules[0].endTime}
+                </Text>
+
+                <Text style={styles.ruleSub}>
+                  {room.schedules[0].isActive
+                    ? "Lịch trình hoạt động"
+                    : "Lịch trình không hoạt động"}
+                </Text>
+              </View>
+
+              <Ionicons
+                name={
+                  room.schedules[0].isActive
+                    ? "checkmark-circle"
+                    : "pause-circle"
+                }
+                size={18}
+                color={
+                  room.schedules[0].isActive
+                    ? theme.colors.success
+                    : theme.colors.textSecondary
+                }
+              />
+            </View>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

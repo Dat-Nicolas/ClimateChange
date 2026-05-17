@@ -35,6 +35,7 @@ interface RoomItem {
   name: string;
   currentTemperature: number;
   currentPeople: number;
+  minPeopleToTurnOn: number;
   airConditioners?: AcSummary[];
 }
 
@@ -99,6 +100,7 @@ const DashboardScreen = () => {
           currentPeople: Number(
             room.currentPeople ?? room.currentPeopleCount ?? 0,
           ),
+          minPeopleToTurnOn: Number(room.minPeopleToTurnOn ?? 6),
           airConditioners: Array.isArray(room.airConditioners)
             ? room.airConditioners.map((ac: any) => {
                 const rawStatus = String(ac.status).toUpperCase();
@@ -130,6 +132,14 @@ const DashboardScreen = () => {
     fetchRooms();
     fetchWeather();
   }, [fetchRooms, fetchWeather]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      fetchRooms();
+    }, 5000); // 5s
+
+    return () => clearInterval(interval);
+  }, [fetchRooms]);
 
   useEffect(() => {
     let mounted = true;
@@ -673,8 +683,7 @@ const DashboardScreen = () => {
 
   const renderRoomItem = useCallback(
     ({ item }: { item: RoomItem }) => {
-      const isCooling =
-        item.airConditioners?.some((ac) => ac.status === "ON") ?? false;
+      const isCooling = item.currentPeople >= item.minPeopleToTurnOn;
 
       const statusLabel = isCooling ? "COOLING" : "STANDBY";
 
