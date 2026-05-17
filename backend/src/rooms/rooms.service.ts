@@ -72,6 +72,14 @@ export class RoomsService {
             currentTemp: true,
             mode: true,
             name: true,
+            brand: {
+              select: {
+                id: true,
+                name: true,
+                irProtocol: true,
+                irButtons: true,
+              },
+            },
           },
         },
 

@@ -342,6 +342,22 @@ const RoomDetailScreen = () => {
         gap: 5,
       },
 
+      locationValue: {
+        flex: 1,
+        fontSize: 13,
+        fontWeight: "800",
+        color: theme.colors.text,
+        marginLeft: 4,
+        flexWrap: "wrap",
+      },
+
+      locationValueMuted: {
+        fontSize: 10,
+        color: theme.colors.textSecondary,
+        fontWeight: "700",
+        marginTop: 2,
+      },
+
       metricTitle: {
         fontSize: 10,
         color: mutedText,
@@ -1012,6 +1028,16 @@ const RoomDetailScreen = () => {
               <Text style={styles.metricTitle}>VỊ TRÍ</Text>
             </View>
 
+            <View style={{ marginTop: 8 }}>
+              <Text
+                style={styles.locationValue}
+                numberOfLines={2}
+                ellipsizeMode="tail"
+              >
+                {room.location || "Không xác định"}
+              </Text>
+             
+            </View>
           </View>
 
           <View style={styles.metricCard}>
@@ -1285,15 +1311,8 @@ const RoomDetailScreen = () => {
           </View>
 
           <View style={styles.acSummaryRow}>
-            <Text style={styles.acSummaryLabel}>Thương hiệu</Text>
+            <Text style={styles.acSummaryLabel}>Thương hiệu </Text>
             <Text style={styles.acSummaryValue}>{currentAc.brand.name}</Text>
-          </View>
-
-          <View style={styles.acSummaryRow}>
-            <Text style={styles.acSummaryLabel}>Giao thức IR</Text>
-            <Text style={styles.acSummaryValue}>
-              {currentAc.brand.irProtocol}
-            </Text>
           </View>
         </View>
 
