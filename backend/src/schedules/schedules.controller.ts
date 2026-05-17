@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Query , Request } from '@nestjs/common';
 import { SchedulesService } from './schedules.service';
-@Controller('schedules')
+@Controller('schedules') 
 export class SchedulesController {
   constructor(private readonly schedulesService: SchedulesService) {}
 
